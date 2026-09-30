@@ -61,16 +61,32 @@ For portions with OpenKey provenance, the applicable copyright and license
 terms are retained. In view of that provenance, this repository does not
 present the adapted engine as an MIT-only component.
 
+## Test data
+
+`Tests/vietnamese-syllables.txt` is the syllable list of the Vietnamese
+spell-check dictionary of ibus-bamboo (https://github.com/BambooEngine/ibus-bamboo,
+`data/vietnamese.cm.dict`, GPL-3.0). It is used only by `scripts/test.sh` to
+check that every listed syllable can be typed; it is not compiled into or
+shipped with the app. Its own notice, which names the Free Vietnamese
+Dictionary Project of Hồ Ngọc Đức (GPL), Vietnamese Wiktionary (CC BY-SA) and
+the abbreviation list of Ngô Quốc Hưng as sources, is kept in
+`Tests/vietnamese-syllables.LICENSE.txt`.
+
 ## Modifications and project-specific work
 
 This project contains modifications and additional work made on top of the
 existing open-source sources, including:
 
 - an InputMethodKit host and VKey preferences/menu integration;
-- a bounded `Composer` adapter that recreates only the active word;
+- a bounded `Composer` adapter that keeps an engine for the active word only;
 - removal of XKey host/event-tap, logging, dictionary, macro, translation,
   updater, and application-inspection integrations;
 - removal of persistent word/history behavior from the active conversion path;
+- two corrections in the adapted engine, marked `VKey:` in the source: the
+  rhyme "uych" accepts a tone key after its final (huỵch), and "quơ" followed
+  by i or n stays "quơi"/"quơn" (Quới, quởn);
+- the word-end rule that gives typed keys back when the marks cannot form a
+  Vietnamese syllable (`VietnameseSyllable`);
 - tests, build/package scripts, documentation, and the VKey app metadata.
 
 VKey is a separate project and should be understood as an independent release,

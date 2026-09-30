@@ -2076,7 +2076,10 @@ class VNEngine {
                 if key == VietnameseData.KEY_N || key == VietnameseData.KEY_C ||
                    key == VietnameseData.KEY_I || key == VietnameseData.KEY_M ||
                    key == VietnameseData.KEY_P || key == VietnameseData.KEY_T {
-                    if i >= 2 && chr(i - 1) == VietnameseData.KEY_O && chr(i - 2) == VietnameseData.KEY_U {
+                    // VKey: after "q" the u belongs to the initial, so "quơ" + i/n
+                    // is "quơi"/"quơn" (Quới, quởn), never "qươi".
+                    let followsQ = i >= 3 && chr(i - 3) == VietnameseData.KEY_Q
+                    if i >= 2 && chr(i - 1) == VietnameseData.KEY_O && chr(i - 2) == VietnameseData.KEY_U && !followsQ {
                         let hasToneW1 = (typingWord[i - 1] & VNEngine.TONEW_MASK) != 0
                         let hasToneW2 = (typingWord[i - 2] & VNEngine.TONEW_MASK) != 0
                         if hasToneW1 != hasToneW2 {

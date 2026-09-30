@@ -17,9 +17,11 @@ if [ -z "$SIGNING_IDENTITY" ]; then
 fi
 echo "Signing with: $SIGNING_IDENTITY"
 
+# Resources are rebuilt from scratch so that nothing from an earlier build lingers.
+rm -rf dist/VKey.app/Contents/Resources
 mkdir -p build/module-cache dist/VKey.app/Contents/{MacOS,Resources}
 export CLANG_MODULE_CACHE_PATH="$PWD/build/module-cache"
-xcrun swiftc -O -swift-version 5 -module-cache-path "$CLANG_MODULE_CACHE_PATH" -target arm64-apple-macosx13.0 -framework AppKit -framework InputMethodKit -framework Carbon Sources/XKeyEngine/*.swift Sources/Composer.swift Sources/main.swift -o dist/VKey.app/Contents/MacOS/VKey
+xcrun swiftc -O -swift-version 5 -module-cache-path "$CLANG_MODULE_CACHE_PATH" -target arm64-apple-macosx13.0 -framework AppKit -framework InputMethodKit -framework Carbon Sources/XKeyEngine/*.swift Sources/*.swift -o dist/VKey.app/Contents/MacOS/VKey
 cp Resources/Info.plist dist/VKey.app/Contents/Info.plist
 for staleIcon in MenuIcon.pdf VKeyIcon.pdf VKeyIcon.icns; do
   if [ -f "dist/VKey.app/Contents/Resources/$staleIcon" ]; then

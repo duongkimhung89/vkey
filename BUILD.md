@@ -47,3 +47,16 @@ Corrected bundle identifier to `local.inputmethod.VKey` and the matching IMK con
 Replaced the handcrafted Composer algorithm with a bounded adapter to the offline XKey core. The IMKit transport now uses direct replacement for the active word, avoiding marked-text decoration. VKey keeps a separate `VK` status-menu for language and Telex/VNI commands; the macOS input-source menu only selects `ABC` or `VKey`. Preferences remain in the old domain. The corresponding source, tests, build scripts and notices are kept in the repository; the DMG contains the app, a short install guide and an `Applications` shortcut. The app performs the per-user Input Methods copy/register step on its first launch from Applications.
 
 Observed startup limitation: after terminating/replacing the app, Chrome initially passed several synthetic test keys through before the new input session became active. Repeating the sentence after activation succeeded completely; warm ABC/VKey switching also passed. Cold-start readiness is not claimed fully fixed. Do not interpret an installed or selected source alone as successful typing verification.
+
+## 0.3.0 (build 8)
+
+Not packaged, notarized or released; the statements above about signing and notarization describe build 6.
+
+- `./scripts/dev-install.sh` builds, runs the tests and installs over the running copy without a logout. The built app, started from anywhere outside `~/Library/Input Methods`, copies itself there when the executable or Info.plist differs, registers it, restarts the running input method and exits. `--quiet` suppresses its alert.
+- `LSMultipleInstancesProhibited` was removed; the installer copy and the input-method copy must be able to run at the same moment.
+- `./scripts/package.sh` reads the version from `Resources/Info.plist`.
+- Behaviour changes: Backspace removes one character; word-end rule that gives the typed keys back when the marks cannot form a Vietnamese syllable (README has the table); Escape is consumed only when it changes text; Telex digits and keypad digits end a word; Control + Shift toggles Vietnamese/English; direct text is written only where a key changes existing letters, with marked text as the fallback.
+
+Tests run for 0.3.0: `./scripts/test.sh` (output in reports/engine-tests.txt) and `./scripts/audit.sh`. `./scripts/live-test.sh` exists but has not been run to completion: it needs the Accessibility permission for `build/VKeyLiveTest.app`. No systematic manual check in Safari, Chrome, Terminal or VS Code has been recorded for this build.
+
+macOS App Management protection can refuse command-line writes into `/Applications/VKey.app`; replace that copy with Finder.

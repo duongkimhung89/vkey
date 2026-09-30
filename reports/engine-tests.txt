@@ -1,3 +1,7 @@
 KNOWN UPSTREAM LIMIT: qusy remains raw; use quys for quý
 XKey upstream transformation corpus: 401 cases
-81 conversion cases, backspace and reset: 0 failures
+81 conversion cases
+English words: 1081/1211 unchanged, 40 with a doubled key (type it three times), the rest are also Vietnamese syllables
+Vietnamese text: 817 distinct words, 3268 typings
+Dictionary syllables: 7672/7884 typeable all four ways
+Commit, backspace and session checks done: 0 failures

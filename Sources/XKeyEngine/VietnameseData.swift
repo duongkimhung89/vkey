@@ -329,6 +329,8 @@ class VietnameseData {
             [KEY_U, KEY_Y, KEY_T],
             [KEY_U, KEY_Y, KEY_P],
             [KEY_U, KEY_Y, KEY_N, KEY_H], [KEY_U, KEY_Y, KEY_H | 0x4000],
+            // VKey: "uych" (huỵch, khuých) so the tone key may follow the final "ch".
+            [KEY_U, KEY_Y, KEY_C, KEY_H],
             [KEY_U, KEY_T],
             [KEY_U, KEY_U],
             [KEY_U, KEY_A],
