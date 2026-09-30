@@ -5,7 +5,7 @@ Bản thử nghiệm 0.2.0 cho Apple Silicon, macOS 13 trở lên; mới build/c
 
 ## Cài từ DMG
 
-1. Mở `dist/VKey-0.2.0-arm64.dmg`.
+1. Tải bản mới nhất [`VKey-0.2.0-arm64.dmg`](https://github.com/duongkimhung89/vkey/releases/latest) từ GitHub Releases rồi mở file DMG.
 2. Kéo **VKey.app** từ DMG vào **Applications**.
 3. Mở **VKey.app** một lần từ Applications. VKey sẽ tự copy và đăng ký phần input method ở vị trí macOS yêu cầu, rồi báo bước tiếp theo. Không cần tự mở `~/Library/Input Methods`.
 4. Đăng xuất tài khoản macOS rồi đăng nhập lại để macOS cập nhật danh sách nguồn nhập.
