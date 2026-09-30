@@ -24,6 +24,7 @@ export CLANG_MODULE_CACHE_PATH="$PWD/build/module-cache"
 xcrun swiftc -O -swift-version 5 -module-cache-path "$CLANG_MODULE_CACHE_PATH" -target arm64-apple-macosx13.0 -framework AppKit -framework InputMethodKit -framework Carbon Sources/XKeyEngine/*.swift Sources/*.swift -o dist/VKey.app/Contents/MacOS/VKey
 cp Resources/Info.plist dist/VKey.app/Contents/Info.plist
 cp Resources/VKeyIcon.pdf dist/VKey.app/Contents/Resources/VKeyIcon.pdf
+cp Resources/VKey.icns dist/VKey.app/Contents/Resources/VKey.icns
 ditto Resources/Licenses dist/VKey.app/Contents/Resources/Licenses
 cp THIRD_PARTY.md dist/VKey.app/Contents/Resources/THIRD_PARTY.md
 cp THIRD_PARTY_NOTICES.md dist/VKey.app/Contents/Resources/THIRD_PARTY_NOTICES.md
