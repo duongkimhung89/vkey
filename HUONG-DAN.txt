@@ -1,0 +1,16 @@
+VKey — Cài đặt nhanh
+
+1. Kéo VKey.app vào Applications.
+2. Mở VKey.app một lần từ Applications.
+3. Đăng xuất tài khoản macOS rồi đăng nhập lại để macOS cập nhật danh sách nguồn nhập.
+4. Vào Cài đặt hệ thống → Bàn phím → Nhập văn bản → Sửa → + → Tiếng Việt → VKey → Thêm.
+5. Chọn VKey trong menu nguồn nhập của macOS.
+
+Bạn không cần tự mở ~/Library/Input Methods. VKey sẽ tự chuẩn bị và đăng ký
+phần input method ở vị trí macOS yêu cầu sau lần mở đầu tiên.
+
+Nếu VKey vẫn chưa xuất hiện sau khi đăng nhập lại, hãy khởi động lại máy rồi kiểm tra lại.
+Không cần cấp quyền Accessibility hoặc Input Monitoring.
+
+Để gỡ cài đặt hoàn toàn, bấm nút VK trên thanh menu → Gỡ cài đặt VKey.
+VKey sẽ xoá cả bản trong Input Methods và VKey.app trong Applications.

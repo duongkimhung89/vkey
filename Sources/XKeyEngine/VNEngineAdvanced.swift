@@ -1,0 +1,238 @@
+// Adapted from XKey, copyright (c) 2025 XKey (MIT). See Resources/Licenses and THIRD_PARTY_NOTICES.md.
+// Modified 2026-09-30: no logging callbacks; engine core only, no host integration.
+// XKey identifies this logic as ported from the GPL-3.0 OpenKey engine.
+// OpenKey provenance: Copyright © 2019 Tuyen Mai / Mai Vu Tuyen; GPL-3.0.
+//
+//  VNEngineAdvanced.swift
+//  XKey
+//
+//  Advanced features implementation for VNEngine
+//  Ported from OpenKey Engine.cpp
+//
+
+import Foundation
+
+extension VNEngine {
+    
+    // MARK: - Quick Telex
+    
+    /// Handle Quick Telex conversion (cc→ch, gg→gi, etc.)
+    func handleQuickTelex(keyCode: UInt16, isCaps: Bool) {
+        guard !buffer.isEmpty else {
+            insertKey(keyCode: keyCode, isCaps: isCaps)
+            return
+        }
+
+        // Quick Telex mappings
+        var replacementKey: UInt16 = 0
+
+        switch keyCode {
+        case VietnameseData.KEY_C: replacementKey = VietnameseData.KEY_H  // cc → ch
+        case VietnameseData.KEY_G: replacementKey = VietnameseData.KEY_I  // gg → gi
+        case VietnameseData.KEY_K: replacementKey = VietnameseData.KEY_H  // kk → kh
+        case VietnameseData.KEY_N: replacementKey = VietnameseData.KEY_G  // nn → ng
+        case VietnameseData.KEY_P: replacementKey = VietnameseData.KEY_H  // pp → ph
+        case VietnameseData.KEY_Q: replacementKey = VietnameseData.KEY_U  // qq → qu
+        case VietnameseData.KEY_T: replacementKey = VietnameseData.KEY_H  // tt → th
+        default:
+            insertKey(keyCode: keyCode, isCaps: isCaps)
+            return
+        }
+
+        hookState.code = UInt8(vWillProcess)
+        hookState.backspaceCount = 0
+        hookState.newCharCount = 1
+
+        // Append entry whose primary keystroke records the USER's actual key (e.g. 'c'),
+        // then overwrite processedData with the displayed replacement (e.g. 'h'). This
+        // keeps the per-entry raw input and the typing-order keystrokeSequence aligned
+        // with what the user pressed, so undoTyping() can restore "ccos" (not "cos")
+        // for words like "chó" typed via Quick Telex.
+        buffer.append(keyCode: keyCode, isCaps: isCaps)
+        buffer.recordKeystroke(RawKeystroke(keyCode: keyCode, isCaps: isCaps))
+        buffer[buffer.count - 1].processedData = UInt32(replacementKey) | (isCaps ? VNEngine.CAPS_MASK : 0)
+
+        hookState.charData[0] = getCharacterCode(buffer.last!.processedData)
+    }
+    
+    // MARK: - Quick Consonant
+    
+    /// Check and handle Quick Start/End Consonant
+    func checkQuickConsonant() {
+        hasHandleQuickConsonant = false
+
+        guard !buffer.isEmpty else { return }
+
+        // Quick Start Consonant: f→ph, j→gi, w→qu
+        if vQuickStartConsonant == 1 && buffer.count >= 1 {
+            let firstKey = chr(0)
+            var replacement: (UInt16, UInt16)? = nil
+
+            switch firstKey {
+            case VietnameseData.KEY_F: replacement = (VietnameseData.KEY_P, VietnameseData.KEY_H)
+            case VietnameseData.KEY_J: replacement = (VietnameseData.KEY_G, VietnameseData.KEY_I)
+            case VietnameseData.KEY_W: replacement = (VietnameseData.KEY_Q, VietnameseData.KEY_U)
+            default: break
+            }
+
+            if let (first, second) = replacement {
+                let isCaps = buffer[0].isCaps
+
+                // Insert new entry at position 1, shift others
+                let secondEntry = CharacterEntry(keyCode: second, isCaps: isCaps)
+                buffer[0].processedData = UInt32(first) | (isCaps ? VNEngine.CAPS_MASK : 0)
+
+                // Insert second character after first
+                var entries = buffer.getAllEntries()
+                entries.insert(secondEntry, at: 1)
+                buffer.clear()
+                for entry in entries {
+                    buffer.append(entry)
+                    // Rebuild keystrokeSequence too so the buffer invariant
+                    // (sequence count == totalKeystrokeCount) survives this transform.
+                    buffer.recordKeystroke(entry.primaryKeystroke)
+                }
+
+                hookState.code = UInt8(vWillProcess)
+                hookState.backspaceCount = buffer.count
+                hookState.newCharCount = buffer.count
+
+                for i in 0..<buffer.count {
+                    hookState.charData[buffer.count - 1 - i] = getCharacterCode(buffer[i].processedData)
+                }
+
+                hasHandleQuickConsonant = true
+                return
+            }
+        }
+
+        // Quick End Consonant: g→ng, h→nh, k→ch
+        if vQuickEndConsonant == 1 && buffer.count >= 2 {
+            let lastKey = chr(buffer.count - 1)
+            var replacement: (UInt16, UInt16)? = nil
+
+            let prevKey = chr(buffer.count - 2)
+            let isVowel = !vietnameseData.isConsonant(prevKey)
+
+            if isVowel {
+                switch lastKey {
+                case VietnameseData.KEY_G: replacement = (VietnameseData.KEY_N, VietnameseData.KEY_G)
+                case VietnameseData.KEY_H: replacement = (VietnameseData.KEY_N, VietnameseData.KEY_H)
+                case VietnameseData.KEY_K: replacement = (VietnameseData.KEY_C, VietnameseData.KEY_H)
+                default: break
+                }
+            }
+
+            if let (first, second) = replacement {
+                let isCaps = buffer[buffer.count - 1].isCaps
+
+                // Replace last and append new. Record the new keystroke too so the
+                // sequence stays in lockstep with totalKeystrokeCount.
+                buffer[buffer.count - 1].processedData = UInt32(first) | (isCaps ? VNEngine.CAPS_MASK : 0)
+                buffer.append(keyCode: second, isCaps: isCaps)
+                buffer.recordKeystroke(RawKeystroke(keyCode: second, isCaps: isCaps))
+
+                hookState.code = UInt8(vWillProcess)
+                hookState.backspaceCount = 1
+                hookState.newCharCount = 2
+
+                hookState.charData[0] = getCharacterCode(buffer[buffer.count - 1].processedData)
+                hookState.charData[1] = getCharacterCode(buffer[buffer.count - 2].processedData)
+
+                hasHandleQuickConsonant = true
+            }
+        }
+    }
+    
+    // MARK: - Upper Case First Character
+    
+    /// Auto capitalize first character after sentence end
+    func upperCaseFirstCharacter() {
+        guard buffer.count >= 1 else { return }
+
+        let firstEntry = buffer[0]
+        let keyCode = firstEntry.keyCode
+
+        guard vietnameseData.isLetter(keyCode) else { return }
+        guard !firstEntry.isCaps else { return }
+
+        // Check if the character was going to be passed through (not yet on screen)
+        // When hookState.code == vDoNothing, the original key event will be consumed
+        // by changing to vWillProcess, so the lowercase char never appears on screen.
+        // In that case, backspaceCount must be 0 (nothing to delete).
+        // Otherwise, if Vietnamese processing already happened (vWillProcess),
+        // we need to backspace the characters that ARE on screen.
+        let charAlreadyOnScreen = hookState.code != UInt8(vDoNothing)
+
+        // Set uppercase flag
+        buffer[0].isCaps = true
+
+        hookState.code = UInt8(vWillProcess)
+        hookState.backspaceCount = charAlreadyOnScreen ? buffer.count : 0
+        hookState.newCharCount = buffer.count
+
+        for i in 0..<buffer.count {
+            hookState.charData[buffer.count - 1 - i] = getCharacterCode(buffer[i].processedData)
+        }
+
+    }
+    // MARK: - Restore If Wrong Spelling
+
+    /// Check and restore if word has wrong spelling
+    @discardableResult
+    func checkRestoreIfWrongSpelling(handleCode: Int) -> Bool {
+        guard tempDisableKey else { return false }
+        guard !buffer.isEmpty else { return false }
+
+        if shouldSkipRestoreForSpecialPattern() {
+            return false
+        }
+
+        // Get keystrokes in ACTUAL typing order (not per-entry modifier order)
+        // This ensures restore produces correct character sequence
+        // Example: "thưef" typed as [t,h,u,w,e,f] should restore to "thuwef", not "thuwfe"
+        let originalKeystrokes = buffer.getKeystrokeSequence()
+        guard !originalKeystrokes.isEmpty else { return false }
+
+        hookState.code = UInt8(handleCode)
+        hookState.backspaceCount = buffer.count
+        hookState.newCharCount = originalKeystrokes.count
+
+        // Set original characters to send (in reverse order for charData)
+        for (i, keystroke) in originalKeystrokes.enumerated() {
+            var charCode = UInt32(keystroke.keyCode)
+            if keystroke.isCaps {
+                charCode |= VNEngine.CAPS_MASK
+            }
+            hookState.charData[originalKeystrokes.count - 1 - i] = charCode
+        }
+
+
+        if handleCode == vRestoreAndStartNewSession {
+            reset()
+        }
+
+        return true
+    }
+
+
+    // MARK: - Special Pattern Detection
+
+    /// Check if current buffer looks like an emoji autocomplete pattern
+    private func shouldSkipRestoreForSpecialPattern() -> Bool {
+        guard !buffer.isEmpty else { return false }
+
+        // Single character - skip restore
+        if buffer.count == 1 {
+            return true
+        }
+
+        // First char not a letter - likely emoji shortcut
+        let firstKeyCode = buffer.keyCode(at: 0)
+        if !vietnameseData.isLetter(firstKeyCode) {
+            return true
+        }
+
+        return false
+    }
+}

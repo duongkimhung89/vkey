@@ -1,0 +1,3 @@
+KNOWN UPSTREAM LIMIT: qusy remains raw; use quys for quý
+XKey upstream transformation corpus: 401 cases
+81 conversion cases, backspace and reset: 0 failures

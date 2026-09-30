@@ -1,0 +1,42 @@
+# macOS metadata
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Swift/Xcode and local build output
+.build/
+DerivedData/
+build/
+dist/
+*.app/
+*.xcarchive/
+*.xcuserstate
+
+# Release/package artifacts
+*.dmg
+*.zip
+*.tar.gz
+
+# Local editor and temporary files
+*.swp
+*.swo
+*~
+*.tmp
+*.temp
+
+# Local environment and signing material
+.env
+.env.*
+!.env.example
+*.p12
+*.pfx
+*.pem
+*.key
+*.mobileprovision
+*.provisionprofile
+
+# Machine-specific or generated audit output
+reports/signing.txt
+reports/xkey-api-inventory.txt
+reports/undefined-symbols.txt
+reports/dmg-verification.txt

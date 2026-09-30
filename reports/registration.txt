@@ -1,0 +1,2 @@
+0.1.0: registration status 0; source absent.
+0.1.1: registration status 0; registered source local.inputmethod.VKey found.

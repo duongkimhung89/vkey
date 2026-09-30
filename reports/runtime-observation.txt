@@ -1,0 +1,3 @@
+VKey launched through LaunchServices, PID 4609 observed at initial launch.
+lsof -nP -a -c VKey -i: no Internet sockets, exit 1 (no matches).
+Point-in-time observation only; GUI input-source integration pending.
