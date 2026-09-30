@@ -50,11 +50,11 @@ Observed startup limitation: after terminating/replacing the app, Chrome initial
 
 ## 0.3.1 (build 9)
 
-Input-source icon only: `scripts/make-icon.swift` draws a 22×16 pt template badge with "VK" knocked out, bundled as `VKeyIcon.pdf` and named by `tsInputMethodIconFileKey`. The earlier icon was a grey bitmap that macOS drew smaller than its own sources. `TISIconLabels` was tried and is read by macOS, but the menu bar does not draw a label badge for a third-party input method. The app no longer carries an `.icns`, so Finder shows a generic app icon. Packaged and released with a Developer ID signature and hardened runtime; not notarized.
+Input-source icon only: `scripts/make-icon.swift` draws a 22×16 pt template badge with "VK" knocked out, bundled as `VKeyIcon.pdf` and named by `tsInputMethodIconFileKey`. The earlier icon was a grey bitmap that macOS drew smaller than its own sources. `TISIconLabels` was tried and is read by macOS, but the menu bar does not draw a label badge for a third-party input method. The app no longer carries an `.icns`, so Finder shows a generic app icon. Packaged and released with a Developer ID signature, hardened runtime, and Apple notarization; the DMG ticket was stapled and the app reports `accepted` with source `Notarized Developer ID`. Submission ID: `37b7730b-5315-43ab-852e-7d358dcf6b35`.
 
 ## 0.3.0 (build 8)
 
-Released on GitHub and Homebrew without notarization; the statements above about notarization describe build 6.
+Released on GitHub and Homebrew without notarization; build 9 (`0.3.1`) was later notarized and stapled.
 
 - `./scripts/dev-install.sh` builds, runs the tests and installs over the running copy without a logout. The built app, started from anywhere outside `~/Library/Input Methods`, copies itself there when the executable or Info.plist differs, registers it, restarts the running input method and exits. `--quiet` suppresses its alert.
 - `LSMultipleInstancesProhibited` was removed; the installer copy and the input-method copy must be able to run at the same moment.

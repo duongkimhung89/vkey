@@ -15,7 +15,7 @@ Bản mới nhất là 0.3.1, có DMG trên GitHub Releases và cài được qu
 
 Từ 0.3.0, cập nhật không cần đăng xuất: mở bản VKey.app mới một lần, nó tự thay bản trong `~/Library/Input Methods` và khởi động lại bộ gõ đang chạy. Khi build từ source, `./scripts/dev-install.sh` làm cả ba việc build, test, cài.
 
-Các bản 0.3.x đã ký bằng Developer ID Application và bật hardened runtime nhưng **chưa** được Apple notarize; bản 0.2.0 build 6 đã được notarize/staple. Nếu macOS vẫn chặn trên một máy cụ thể, không tắt Gatekeeper/SIP hay xoá quarantine để vượt chặn; hãy kiểm tra lại checksum và trạng thái macOS.
+Bản 0.3.1 đã ký bằng Developer ID Application, bật hardened runtime và được Apple notarize/staple; bản 0.3.0 chưa được notarize. Nếu macOS vẫn chặn trên một máy cụ thể, không tắt Gatekeeper/SIP hay xoá quarantine để vượt chặn; hãy kiểm tra lại checksum và trạng thái macOS.
 
 ## Gõ thử
 

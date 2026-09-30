@@ -17,4 +17,18 @@ cp HUONG-DAN.txt "$DMG_STAGE/HUONG-DAN.txt"
 ln -s /Applications "$DMG_STAGE/Applications"
 hdiutil create -volname VKey -srcfolder "$DMG_STAGE" -format UDZO -ov "$DMG"
 hdiutil verify "$DMG"
+# Notarize and staple when a notarytool keychain profile is named, e.g.
+# VKEY_NOTARY_PROFILE=VKeyNotary (created with `xcrun notarytool store-credentials`).
+if [ -n "${VKEY_NOTARY_PROFILE:-}" ]; then
+  RESULT="$(xcrun notarytool submit "$DMG" --keychain-profile "$VKEY_NOTARY_PROFILE" --wait --output-format json)"
+  echo "$RESULT"
+  if ! grep -q '"status" *: *"Accepted"' <<<"$RESULT"; then
+    echo "Notarization was not accepted; see: xcrun notarytool log <id> --keychain-profile $VKEY_NOTARY_PROFILE" >&2
+    exit 1
+  fi
+  xcrun stapler staple "$DMG"
+  xcrun stapler validate "$DMG"
+  # The disk image itself is not a code object; assess the signed app inside it.
+  spctl --assess --type execute -vv dist/VKey.app
+fi
 shasum -a 256 "$DMG" > dist/SHA256SUMS.txt
