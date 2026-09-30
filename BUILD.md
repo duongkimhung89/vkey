@@ -50,7 +50,7 @@ Observed startup limitation: after terminating/replacing the app, Chrome initial
 
 ## 0.3.1 (build 9)
 
-Input-source icon only: `scripts/make-icon.swift` draws a 22×16 pt template badge with "VK" knocked out, bundled as `VKeyIcon.pdf` and named by `tsInputMethodIconFileKey`. The earlier icon was a grey bitmap that macOS drew smaller than its own sources. `TISIconLabels` was tried and is read by macOS, but the menu bar does not draw a label badge for a third-party input method. The app no longer carries an `.icns`, so Finder shows a generic app icon. Packaged and released with a Developer ID signature, hardened runtime, and Apple notarization; the DMG ticket was stapled and the app reports `accepted` with source `Notarized Developer ID`. Submission ID: `37b7730b-5315-43ab-852e-7d358dcf6b35`.
+Input-source icon only: `scripts/make-icon.swift` draws a 22×16 pt template badge with "VK" knocked out, bundled as `VKeyIcon.pdf` and named by `tsInputMethodIconFileKey`. The earlier icon was a grey bitmap that macOS drew smaller than its own sources. `TISIconLabels` was tried and is read by macOS, but the menu bar does not draw a label badge for a third-party input method. The app no longer carries an `.icns`, so Finder shows a generic app icon. Packaged and released with a Developer ID signature, hardened runtime, and Apple notarization; the DMG ticket was stapled and the app reports `accepted` with source `Notarized Developer ID`. Submission ID: `e61b826a-e077-4826-b285-f7201fb27965`.
 
 ## 0.3.0 (build 8)
 
