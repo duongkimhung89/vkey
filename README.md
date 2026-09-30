@@ -2,11 +2,11 @@
 
 Bộ gõ tiếng Việt native cho macOS, Telex/VNI, Unicode, hoàn toàn offline.
 Cho Apple Silicon, macOS 13 trở lên; mới build/chạy trên macOS 27.0.1.
-Mã nguồn hiện tại là 0.3.0 (build từ source, chưa có DMG phát hành); bản DMG gần nhất trên GitHub Releases là 0.2.0.
+Bản mới nhất là 0.3.1, có DMG trên GitHub Releases và cài được qua Homebrew (`brew install --cask duongkimhung89/vkey/vkey`).
 
 ## Cài từ DMG
 
-1. Tải bản mới nhất [`VKey-0.2.0-arm64.dmg`](https://github.com/duongkimhung89/vkey/releases/latest) từ GitHub Releases rồi mở file DMG.
+1. Tải bản mới nhất [`VKey-0.3.1-arm64.dmg`](https://github.com/duongkimhung89/vkey/releases/latest) từ GitHub Releases rồi mở file DMG.
 2. Kéo **VKey.app** từ DMG vào **Applications**.
 3. Mở **VKey.app** một lần từ Applications. VKey sẽ tự copy và đăng ký phần input method ở vị trí macOS yêu cầu, rồi báo bước tiếp theo. Không cần tự mở `~/Library/Input Methods`.
 4. Đăng xuất tài khoản macOS rồi đăng nhập lại để macOS cập nhật danh sách nguồn nhập.
@@ -15,7 +15,7 @@ Mã nguồn hiện tại là 0.3.0 (build từ source, chưa có DMG phát hành
 
 Từ 0.3.0, cập nhật không cần đăng xuất: mở bản VKey.app mới một lần, nó tự thay bản trong `~/Library/Input Methods` và khởi động lại bộ gõ đang chạy. Khi build từ source, `./scripts/dev-install.sh` làm cả ba việc build, test, cài.
 
-Bản DMG 0.2.0 build 6 đã ký bằng Developer ID Application, bật hardened runtime và đã được Apple notarize/staple. Nếu macOS vẫn chặn trên một máy cụ thể, không tắt Gatekeeper/SIP hay xoá quarantine để vượt chặn; hãy kiểm tra lại checksum và trạng thái macOS.
+Các bản 0.3.x đã ký bằng Developer ID Application và bật hardened runtime nhưng **chưa** được Apple notarize; bản 0.2.0 build 6 đã được notarize/staple. Nếu macOS vẫn chặn trên một máy cụ thể, không tắt Gatekeeper/SIP hay xoá quarantine để vượt chặn; hãy kiểm tra lại checksum và trạng thái macOS.
 
 ## Gõ thử
 

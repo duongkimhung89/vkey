@@ -23,19 +23,7 @@ mkdir -p build/module-cache dist/VKey.app/Contents/{MacOS,Resources}
 export CLANG_MODULE_CACHE_PATH="$PWD/build/module-cache"
 xcrun swiftc -O -swift-version 5 -module-cache-path "$CLANG_MODULE_CACHE_PATH" -target arm64-apple-macosx13.0 -framework AppKit -framework InputMethodKit -framework Carbon Sources/XKeyEngine/*.swift Sources/*.swift -o dist/VKey.app/Contents/MacOS/VKey
 cp Resources/Info.plist dist/VKey.app/Contents/Info.plist
-for staleIcon in MenuIcon.pdf VKeyIcon.pdf VKeyIcon.icns; do
-  if [ -f "dist/VKey.app/Contents/Resources/$staleIcon" ]; then
-    unlink "dist/VKey.app/Contents/Resources/$staleIcon"
-  fi
-done
-ICONSET_DIR="$PWD/build/vkey-icon.iconset"
-mkdir -p "$ICONSET_DIR"
-sips -s format png -z 16 16 Resources/VKeyIcon.pdf --out "$ICONSET_DIR/icon_16x16.png" >/dev/null
-sips -s format png -z 32 32 Resources/VKeyIcon.pdf --out "$ICONSET_DIR/icon_16x16@2x.png" >/dev/null
-sips -s format png -z 32 32 Resources/VKeyIcon.pdf --out "$ICONSET_DIR/icon_32x32.png" >/dev/null
-sips -s format png -z 64 64 Resources/VKeyIcon.pdf --out "$ICONSET_DIR/icon_32x32@2x.png" >/dev/null
-iconutil -c icns "$ICONSET_DIR" -o build/VKeyIcon.icns
-cp build/VKeyIcon.icns dist/VKey.app/Contents/Resources/VKeyIcon.icns
+cp Resources/VKeyIcon.pdf dist/VKey.app/Contents/Resources/VKeyIcon.pdf
 ditto Resources/Licenses dist/VKey.app/Contents/Resources/Licenses
 cp THIRD_PARTY.md dist/VKey.app/Contents/Resources/THIRD_PARTY.md
 cp THIRD_PARTY_NOTICES.md dist/VKey.app/Contents/Resources/THIRD_PARTY_NOTICES.md
