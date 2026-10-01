@@ -47,6 +47,8 @@ Trong VNI, chữ số đứng sau nguyên âm vẫn là phím dấu (`a1` → `�
 
 ## Cách VKey đưa chữ vào ứng dụng
 
+VKey giữ tạm phím gốc và chữ đã chuyển dấu của từ đang ghép trong RAM. Phím gốc thông thường có tối đa 28 ký tự, tính cả phím dấu; riêng khi tiếp nối từ đã gõ trước lúc bộ gõ kích hoạt, có thể lên tới 29 ký tự. Đây là giới hạn của một lần ghép từ, không phải giới hạn độ dài văn bản bạn được gõ. Dữ liệu ghép từ được bỏ khi từ kết thúc hoặc phiên nhập được dọn, không ghi thành lịch sử gõ; việc giải phóng bộ nhớ không bảo đảm ghi đè sạch dữ liệu cũ. Xem [SECURITY.md](SECURITY.md) để biết chi tiết.
+
 Từ đang gõ là văn bản thường, không gạch chân. Phím nào chỉ thêm chính chữ của nó thì để ứng dụng tự gõ, giống hệt khi không có bộ gõ; VKey chỉ can thiệp khi một phím làm đổi chữ đã có (thêm dấu, mũ), và chỉ thay đúng phần đổi. Khi ứng dụng không báo vị trí con trỏ, không di chuyển con trỏ theo chữ gõ hoặc bỏ qua vùng thay thế, VKey dùng marked text tiêu chuẩn của InputMethodKit với gạch chân rất mờ. VKey chỉ ghi nhớ bundle identifier của ứng dụng cần cơ chế dự phòng.
 
 Trình duyệt và app Electron giữ văn bản ở tiến trình khác nên khi gõ nhanh, vị trí con trỏ chúng báo về có thể chậm vài phím. VKey tự ghi lại các vị trí con trỏ đã đi qua sau mỗi phím; vị trí báo về trùng một trong số đó chỉ là báo chậm, từ đang gõ vẫn giữ nguyên và dấu vẫn được bỏ đúng. Chỉ khi con trỏ nằm ở chỗ khác (bấm chuột, chọn vùng) thì từ mới kết thúc.
