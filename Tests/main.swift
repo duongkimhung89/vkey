@@ -452,12 +452,12 @@ do {
  var reported = 0
  session.onDirectTextUnsupported = { reported += 1 }
  type("ab tooi ddi hocj ", into: client, with: session)
- expect(client.text, "ab tôi đi học ", "frozen caret: marked text from the second key on")
- expect("\(reported)", "0", "frozen caret seen once is not yet reported")
- session.prefersMarkedText = false   // the application is activated again
- type("nuwax ddi ", into: client, with: session)
- expect(client.text, "ab tôi đi học nữa đi ", "frozen caret, second activation")
- expect("\(reported)", "1", "frozen caret reported when seen again")
+ expect(client.text, "ab tôi đi học ", "frozen caret: words placed from VKey's own record")
+ expect("\(reported)", "0", "frozen caret not reported while it could still be late")
+ type("nuwax ddi chowi cungf cacs banj ", into: client, with: session)
+ expect(client.text, "ab tôi đi học nữa đi chơi cùng các bạn ", "frozen caret, marked text once it never follows")
+ expect("\(reported)", "1", "frozen caret reported once")
+ if !session.prefersMarkedText { print("FAIL frozen caret did not switch to marked text"); failures += 1 }
 }
 // A client whose caret normally follows typing but is reported one key late
 // (text held in another process) keeps the word together.
@@ -494,6 +494,67 @@ do {
  directSession.commit(client: direct)
  type("s", into: direct, with: directSession)
  expect(direct.text, "tôis", "commit on focus change, direct")
+}
+
+// Fast typing into a client whose text lives in another process (browsers,
+// Electron): every edit is applied in order, but the caret it reports trails
+// the document by a few edits, more or less at random.  Whatever the delays,
+// the text must come out exactly as it does in a client that is never late.
+do {
+ final class AsyncClient: FakeClient {
+  var random = SystemRandomNumberGenerator()
+  var maximumLag = 4
+  private var history: [NSRange] = [NSRange(location: 0, length: 0)]
+  private var shown = 0
+  // The caret after each complete edit, as the application would report it.
+  override func insertText(_ text: String, replacementRange: NSRange) {
+   super.insertText(text, replacementRange: replacementRange)
+   history.append(selection)
+  }
+  override func pressNatively(_ key: KeyStroke) {
+   super.pressNatively(key)
+   history.append(selection)
+  }
+  override func selectedRange() -> NSRange {
+   // Reports never go back in time, and may lag up to maximumLag edits.
+   let newest = history.count - 1
+   shown = max(shown, newest - Int.random(in: 0...maximumLag, using: &random))
+   return history[shown]
+  }
+ }
+ var sessions: [(TypingMode, String)] = [(.telex, telexSentence), (.vni, vniSentence),
+  (.telex, "tieengs<g vieejt<t ab tooi<<<<<cd dduwowcj<<<c nguowif<i, cuarn<n "),
+  (.vni, "tie6ng1<g Vie6t5<t d9uo7c5<<c to6i<<<<ta ")]
+ for mode in [TypingMode.telex, .vni] {
+  for toneAtEnd in [true, false] {
+   let words = vietnameseTokens.compactMap { keys(for: $0, mode: mode, toneAtEnd: toneAtEnd) }
+   sessions.append((mode, words.joined(separator: " ") + " "))
+  }
+ }
+ var lateRuns = 0, lateFailures = 0
+ for (mode, keys) in sessions {
+  let expected = run(mode, keys).text
+  for _ in 0..<25 {
+   let client = AsyncClient(), session = InputSession()
+   session.mode = mode
+   type(keys, into: client, with: session)
+   lateRuns += 1
+   if session.prefersMarkedText { print("FAIL a late caret must not switch the client to marked text"); failures += 1 }
+   if client.text != expected {
+    lateFailures += 1
+    if lateFailures <= 3 {
+     let got = client.text.split(separator: " "), want = expected.split(separator: " ")
+     if let i = got.indices.first(where: { $0 < want.count && got[$0] != want[$0] }) {
+      print("FAIL late caret, \(mode): \"\(got[i])\" where \"\(want[i])\" was expected")
+     } else {
+      print("FAIL late caret, \(mode): text differs in length")
+     }
+    }
+   }
+  }
+ }
+ failures += lateFailures
+ print("Late caret: \(lateRuns - lateFailures)/\(lateRuns) sessions exact")
 }
 
 print("Commit, backspace and session checks done: \(failures) failures")

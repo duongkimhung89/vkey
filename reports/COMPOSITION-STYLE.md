@@ -13,3 +13,9 @@ VKey's commands are supplied through its own status item; `IMKInputController.me
 ## 0.3.0
 
 The direct transport now leaves a key that only adds its own letter to the host application and writes through IMKit only when a key changes letters already present, replacing from the first changed character. Plain typing therefore reaches the host exactly as it does without an input method, which removes the per-key rewrite of the whole word (visible as flicker in address bars that fill in completions). A client that reports no selection, whose caret does not follow typed letters, or that ignores the replacement range is given standard marked text with a faint underline. This has unit coverage against simulated clients only; see README for what has not been run live.
+
+## Fast typing (0.3.3)
+
+Browsers and Electron apps report the caret a few edits late when keys arrive quickly. 0.3.2 accepted a report at most one key late, and only after the client had been seen to follow typing; anything later discarded the active word, so the next tone key was typed as a plain letter (`tooi` stayed `tooi`). A simulated client whose reports trail by 0–4 edits lost words in 29 of 150 sessions.
+
+The session now keeps a trail of the caret positions its own edits and the application's typed keys lead to. A report matching any of them is a late report; only a caret elsewhere ends the word. Word starts after a space, punctuation or Backspace take their position from the trail as well. A reported caret that never follows the text (over 32 unconfirmed edits) switches later words to marked text. Clicks that the client passes to the input method end the word at once. The simulated late client now matches the never-late client in every session, up to 8 edits of lag.

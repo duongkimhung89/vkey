@@ -1,4 +1,4 @@
-# VKey 0.3.2 — Security and privacy
+# VKey 0.3.3 — Security and privacy
 
 Network: Does this app access the Internet? **NO application network features or requests.**
 Keystroke storage: Does this app save keystrokes? **NO persistent storage.**
@@ -14,7 +14,7 @@ No Accessibility, Input Monitoring, screen recording, full disk access or admini
 
 ## Data storage
 
-The application-written preferences are `TypingMode` (telex/vni), `VietnameseEnabled` and `SpellingAware` (Booleans), and `MarkedTextApplications`: the bundle identifiers of applications found unable to take direct text. All are in the `local.vkey.inputmethod` UserDefaults domain. AppKit may manage its own normal system preferences. No typed content is written to preferences, files, logs or pasteboard. No dictionaries, input histories or accounts exist. Composition is delivered only to the requesting local text client. That client application remains responsible for its own storage and network behavior.
+The application-written preferences are `TypingMode` (telex/vni), `VietnameseEnabled` (Boolean), and `MarkedTextApplications`: the bundle identifiers of applications found unable to take direct text. All are in the `local.vkey.inputmethod` UserDefaults domain. AppKit may manage its own normal system preferences. No typed content is written to preferences, files, logs or pasteboard. No dictionaries, input histories or accounts exist. Composition is delivered only to the requesting local text client. That client application remains responsible for its own storage and network behavior.
 
 ## Verification and limits
 

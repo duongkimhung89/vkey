@@ -26,7 +26,7 @@ func source(_ id: String) -> TISInputSource? {
 func spin(_ seconds: TimeInterval) { RunLoop.current.run(until: Date().addingTimeInterval(seconds)) }
 
 let preferences = UserDefaults(suiteName: "local.vkey.inputmethod")!
-let savedPreferences = ["TypingMode", "VietnameseEnabled", "SpellingAware"].map { ($0, preferences.object(forKey: $0)) }
+let savedPreferences = ["TypingMode", "VietnameseEnabled"].map { ($0, preferences.object(forKey: $0)) }
 let savedSource = TISCopyCurrentKeyboardInputSource().takeRetainedValue()
 func restore() {
  for (key, value) in savedPreferences { preferences.set(value, forKey: key) }
@@ -36,10 +36,9 @@ func restore() {
 // Put the user's input source and settings back however the run ends.
 atexit { restore() }
 for number in [SIGINT, SIGTERM, SIGPIPE, SIGHUP] { signal(number) { _ in exit(3) } }
-func setMode(_ mode: String, spelling: Bool = true) {
+func setMode(_ mode: String) {
  preferences.set(mode, forKey: "TypingMode")
  preferences.set(true, forKey: "VietnameseEnabled")
- preferences.set(spelling, forKey: "SpellingAware")
  preferences.synchronize()
  spin(1.0)
 }
@@ -217,11 +216,6 @@ type("xin chao vie", pause: 0.03)
 textView.setSelectedRange(NSRange(location: 0, length: 3))
 type("t", pause: 0.05)
 check("NSTextView / type over a selection made mid-word", textView.string, "t chao vie")
-// Free typing with the spelling switch off, as in 0.2.
-setMode("telex", spelling: false)
-textView.string = ""
-type("microo windows ", pause: 0.03)
-check("NSTextView / spelling off", textView.string, "micrô ưindớ ")
 
 restore()
 print("\(keysSent) keys pressed")

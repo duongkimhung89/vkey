@@ -11,7 +11,7 @@ Bản mới nhất là 0.3.2, có DMG trên GitHub Releases và cài được qu
 3. Mở **VKey.app** một lần từ Applications. VKey sẽ tự copy và đăng ký phần input method ở vị trí macOS yêu cầu, rồi báo bước tiếp theo. Không cần tự mở `~/Library/Input Methods`.
 4. Đăng xuất tài khoản macOS rồi đăng nhập lại để macOS cập nhật danh sách nguồn nhập.
 5. Cài đặt hệ thống → Bàn phím → Nhập văn bản → Sửa → **+** → Tiếng Việt → **VKey** → Thêm. Chọn VKey trong menu nguồn nhập của macOS. Nếu VKey vẫn chưa xuất hiện, hãy khởi động lại máy.
-6. Menu nguồn nhập của macOS chỉ dùng để chọn **ABC/VKey**. Nút **VI/EN** trên thanh menu mở các lệnh **Tiếng Việt/English**, **Telex/VNI**, **Kiểm tra chính tả**, **Hướng dẫn / Giới thiệu** và **Gỡ cài đặt VKey**; **Control + Shift** đổi nhanh Việt/Anh. macOS tự khởi chạy bộ gõ khi chọn nguồn nhập, không cần thêm mục đăng nhập.
+6. Menu nguồn nhập của macOS chỉ dùng để chọn **ABC/VKey**. Nút **VI/EN** trên thanh menu mở các lệnh **Tiếng Việt/English**, **Telex/VNI**, **Hướng dẫn**, **Giới thiệu** (kèm số phiên bản đang chạy) và **Gỡ cài đặt VKey**; **Control + Shift** đổi nhanh Việt/Anh. macOS tự khởi chạy bộ gõ khi chọn nguồn nhập, không cần thêm mục đăng nhập.
 
 Từ 0.3.0, cập nhật không cần đăng xuất: mở bản VKey.app mới một lần, nó tự thay bản trong `~/Library/Input Methods` và khởi động lại bộ gõ đang chạy. Khi build từ source, `./scripts/dev-install.sh` làm cả ba việc build, test, cài.
 
@@ -41,13 +41,15 @@ VKey áp dụng một quy tắc cấu trúc khi từ kết thúc: nếu dấu r�
 | `test`, `this`, `is`, `more`, `taxi`, `down` | `tét`, `thí`, `í`, `moẻ`, `tãi`, `dơn` | đúng dạng âm tiết tiếng Việt nên không có gì cho thấy bạn định gõ tiếng Anh; chuyển sang English hoặc gõ lặp phím dấu |
 | `pass`, `off`, `error`, `password` | `pas`, `of`, `eror`, `pasword` | phím dấu lặp là phím huỷ của Telex; gõ thêm một lần nữa (`passs`) để ra đúng chữ |
 
-Trong 1.211 từ tiếng Anh thông dụng của bộ test, 1.081 từ ra đúng như gõ, 40 từ chứa chữ đôi (`ss`, `ff`, `rr`) cần gõ chữ đó ba lần, còn lại là từ có dạng âm tiết tiếng Việt. Mục **Kiểm tra chính tả** trên menu tắt luật này và cả việc chỉ bỏ dấu đúng chỗ, để bỏ dấu tự do, ví dụ khi gõ `micrô`. Một số cụm phụ âm ngoài phạm vi quy tắc hiện tại, như `cr` và `bl`, chưa được hỗ trợ; vì vậy `crôm` hiện chưa chuyển đổi.
+Trong 1.211 từ tiếng Anh thông dụng của bộ test, 1.081 từ ra đúng như gõ, 40 từ chứa chữ đôi (`ss`, `ff`, `rr`) cần gõ chữ đó ba lần, còn lại là từ có dạng âm tiết tiếng Việt. Luật này luôn bật, nên từ mượn bỏ dấu ngoài quy tắc tiếng Việt (như `micrô`) hiện chưa gõ được dấu. Một số cụm phụ âm ngoài phạm vi quy tắc hiện tại, như `cr` và `bl`, chưa được hỗ trợ; vì vậy `crôm` hiện chưa chuyển đổi.
 
 Trong VNI, chữ số đứng sau nguyên âm vẫn là phím dấu (`a1` → `á`), nên `U23`, `A4` cần chuyển sang English.
 
 ## Cách VKey đưa chữ vào ứng dụng
 
 Từ đang gõ là văn bản thường, không gạch chân. Phím nào chỉ thêm chính chữ của nó thì để ứng dụng tự gõ, giống hệt khi không có bộ gõ; VKey chỉ can thiệp khi một phím làm đổi chữ đã có (thêm dấu, mũ), và chỉ thay đúng phần đổi. Khi ứng dụng không báo vị trí con trỏ, không di chuyển con trỏ theo chữ gõ hoặc bỏ qua vùng thay thế, VKey dùng marked text tiêu chuẩn của InputMethodKit với gạch chân rất mờ. VKey chỉ ghi nhớ bundle identifier của ứng dụng cần cơ chế dự phòng.
+
+Trình duyệt và app Electron giữ văn bản ở tiến trình khác nên khi gõ nhanh, vị trí con trỏ chúng báo về có thể chậm vài phím. VKey tự ghi lại các vị trí con trỏ đã đi qua sau mỗi phím; vị trí báo về trùng một trong số đó chỉ là báo chậm, từ đang gõ vẫn giữ nguyên và dấu vẫn được bỏ đúng. Chỉ khi con trỏ nằm ở chỗ khác (bấm chuột, chọn vùng) thì từ mới kết thúc.
 
 ## Trạng thái
 
@@ -57,6 +59,7 @@ Từ đang gõ là văn bản thường, không gạch chân. Phím nào chỉ t
 - 817 từ của một đoạn văn tiếng Việt gõ theo 4 cách (Telex/VNI, dấu cuối từ hoặc ngay sau nguyên âm).
 - 7.672/7.884 âm tiết của từ điển ibus-bamboo (dùng làm dữ liệu test, không đi kèm app) gõ được cả bốn cách. Phần còn lại là tiền tố phụ âm lạ (`crô`, `blô`), phiên âm và vài mục sai chính tả trong chính từ điển.
 - Bộ từ tiếng Anh thông dụng (xem trên).
+- Gõ nhanh vào ô văn bản giả báo vị trí con trỏ chậm ngẫu nhiên 0–4 phím (cả đoạn văn 817 từ, bốn cách gõ, có Backspace): văn bản ra phải giống hệt ô không chậm.
 - Mô phỏng phiên gõ trên ô văn bản giả: câu xen Anh–Việt, Backspace, Escape, phím tắt, chọn vùng rồi xoá, bấm chuột giữa từ, thanh địa chỉ có gợi ý tự điền, ứng dụng không hỗ trợ thay thế trực tiếp.
 
 `./scripts/live-test.sh` gõ bằng phím hệ thống thật vào NSTextView, NSTextField và WebKit qua bản VKey đang cài. Script cần quyền Accessibility cho `build/VKeyLiveTest.app` (chỉ công cụ test cần, VKey thì không). Bản 0.3.0 **chưa** được chạy bộ test này và chưa được kiểm tra tay có hệ thống trên Safari, Chrome, Terminal, VS Code; các kiểm tra tay của 0.2.0 nằm trong reports/INTEGRATION.md.

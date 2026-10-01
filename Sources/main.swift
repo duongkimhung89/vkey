@@ -14,10 +14,6 @@ final class Preferences {
         get { TypingMode(rawValue: store.string(forKey: "TypingMode") ?? "telex") ?? .telex }
         set { store.set(newValue.rawValue, forKey: "TypingMode") }
     }
-    var checksSpelling: Bool {
-        get { store.object(forKey: "SpellingAware") as? Bool ?? true }
-        set { store.set(newValue, forKey: "SpellingAware") }
-    }
 
     /// Applications found unable to take direct text; the active word is
     /// shown there as marked text.  Only bundle identifiers are stored.
@@ -59,13 +55,19 @@ final class VKeyController: IMKInputController {
     private var toggleArmed = false
 
     override func recognizedEvents(_ sender: Any!) -> Int {
-        Int(NSEvent.EventTypeMask([.keyDown, .flagsChanged]).rawValue)
+        Int(NSEvent.EventTypeMask([.keyDown, .flagsChanged, .leftMouseDown]).rawValue)
     }
     override func handle(_ event: NSEvent!, client sender: Any!) -> Bool {
         guard let event, let input = sender as? IMKTextInput else { return false }
         let client = Client(input: input)
         if event.type == .flagsChanged {
             handleModifiers(event.modifierFlags, client: client)
+            return false
+        }
+        if event.type == .leftMouseDown {
+            // A click moves the caret.  Clients that pass it on let the word
+            // end now rather than when the moved caret is next reported.
+            session.commit(client: client)
             return false
         }
         guard event.type == .keyDown else { return false }
@@ -83,10 +85,9 @@ final class VKeyController: IMKInputController {
             session.commit(client: client)
             return false
         }
-        if session.mode != preferences.mode || session.checksSpelling != preferences.checksSpelling {
+        if session.mode != preferences.mode {
             session.commit(client: client)
             session.mode = preferences.mode
-            session.checksSpelling = preferences.checksSpelling
         }
         let flags = event.modifierFlags
         return session.handle(KeyStroke(keyCode: event.keyCode,
@@ -126,7 +127,6 @@ final class VKeyController: IMKInputController {
         toggleArmed = false
         let preferences = Preferences.shared
         session.mode = preferences.mode
-        session.checksSpelling = preferences.checksSpelling
         let bundleIdentifier = (sender as? IMKTextInput)?.bundleIdentifier()
         session.prefersMarkedText = preferences.usesMarkedText(in: bundleIdentifier)
         session.onDirectTextUnsupported = {
@@ -159,10 +159,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var statusItem: NSStatusItem?
     private var secureInput = false
 
+    private var shortVersion: String {
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?"
+    }
     private var version: String {
-        let short = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?"
         let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "?"
-        return "\(short) (build \(build))"
+        return "\(shortVersion) (build \(build))"
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -353,12 +355,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         item("Telex", #selector(telex), checked: preferences.mode == .telex)
         item("VNI", #selector(vni), checked: preferences.mode == .vni)
         menu.addItem(.separator())
-        item("Kiểm tra chính tả (tự trả lại từ không phải tiếng Việt)", #selector(toggleSpelling), checked: preferences.checksSpelling)
         if preferences.markedTextApplicationCount > 0 {
             item("Thử lại gõ không gạch chân ở \(preferences.markedTextApplicationCount) ứng dụng", #selector(forgetMarkedText))
         }
         menu.addItem(.separator())
-        item("Hướng dẫn / Giới thiệu", #selector(about))
+        item("Hướng dẫn", #selector(guide))
+        item("Giới thiệu VKey \(shortVersion)", #selector(about))
         item("Gỡ cài đặt VKey", #selector(uninstall))
         item("Thoát", #selector(quit))
     }
@@ -372,7 +374,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
     @objc private func telex() { Preferences.shared.mode = .telex }
     @objc private func vni() { Preferences.shared.mode = .vni }
-    @objc private func toggleSpelling() { Preferences.shared.checksSpelling.toggle() }
     @objc private func forgetMarkedText() { Preferences.shared.forgetMarkedTextApplications() }
     @objc private func quit() { NSApp.terminate(nil) }
 
@@ -463,9 +464,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         return Unmanaged<CFString>.fromOpaque(pointer).takeUnretainedValue() as String
     }
 
+    @objc private func guide() {
+        showAlert("Hướng dẫn gõ",
+                  "Chọn VKey trong menu nguồn nhập của macOS. Nút VI/EN trên thanh menu đổi Tiếng Việt/English và Telex/VNI; Control + Shift đổi nhanh Việt/Anh.\n\nTelex: tieengs Vieetj → tiếng Việt, dduwowngf → đường.\nVNI: tie6ng1 Vie6t5 → tiếng Việt, d9uo7ng2 → đường.\n\nBackspace xoá một ký tự của từ đang gõ. Escape trả lại các phím đã gõ.\n\nKhi kết thúc từ, nếu dấu rơi vào chỗ tiếng Việt không có (windows, user, software…) VKey trả lại đúng các phím đã gõ. Từ tiếng Anh có dạng âm tiết tiếng Việt (test → tét, is → í) thì chuyển sang English hoặc gõ lặp phím dấu để huỷ dấu (tesst → test, passs → pass).\n\nCài đặt: kéo VKey.app vào Applications rồi mở một lần. Lần đầu cần đăng xuất rồi đăng nhập lại, sau đó thêm VKey trong Cài đặt hệ thống → Bàn phím → Nhập văn bản → Sửa → + → Tiếng Việt. Khi cập nhật chỉ cần mở bản mới một lần.")
+    }
     @objc private func about() {
-        showAlert("VKey \(version) — bộ gõ offline",
-                  "Telex và VNI • Unicode\nKhông kết nối mạng, không lưu nội dung gõ.\n\nCài đặt: kéo VKey.app vào Applications rồi mở một lần. Lần đầu cần đăng xuất rồi đăng nhập lại, sau đó thêm VKey trong Cài đặt hệ thống → Bàn phím → Nhập văn bản → Sửa → + → Tiếng Việt. Khi cập nhật chỉ cần mở bản mới một lần.\n\nChọn VKey trong menu nguồn nhập của macOS. Nút VI/EN trên thanh menu mở các lệnh Tiếng Việt/English và Telex/VNI; Control + Shift đổi nhanh Việt/Anh.\n\nBackspace xoá một ký tự của từ đang gõ. Escape trả lại các phím đã gõ. Khi kết thúc từ, nếu dấu rơi vào chỗ tiếng Việt không có (windows, user, software…) VKey trả lại đúng các phím đã gõ. Từ tiếng Anh có dạng âm tiết tiếng Việt (test → tét, is → í) thì chuyển sang English hoặc gõ lặp phím dấu để huỷ dấu (tesst → test, passs → pass). Tắt mục “Kiểm tra chính tả” để bỏ dấu tự do (micrô).\n\nKhông cần quyền Accessibility hoặc Input Monitoring.\n\nThông tin nguồn mở, bản quyền và license nằm trong Resources/THIRD_PARTY.md và Resources/Licenses/.")
+        showAlert("VKey \(version)",
+                  "Bộ gõ tiếng Việt offline cho macOS.\nTelex và VNI • Unicode\n\nKhông kết nối mạng, không lưu nội dung gõ. Không cần quyền Accessibility hoặc Input Monitoring.\n\nhttps://github.com/duongkimhung89/vkey\n\nThông tin nguồn mở, bản quyền và license nằm trong Resources/THIRD_PARTY.md và Resources/Licenses/.")
     }
 }
 let app = NSApplication.shared
