@@ -1,5 +1,5 @@
-KNOWN UPSTREAM LIMIT: qusy remains raw; use quys for quý
-XKey upstream transformation corpus: 401 cases
+KNOWN EDGE CASE: qusy remains raw; use quys for quý
+Reference transformation corpus: 401 cases
 81 conversion cases
 English words: 1081/1211 unchanged, 40 with a doubled key (type it three times), the rest are also Vietnamese syllables
 Vietnamese text: 817 distinct words, 3268 typings

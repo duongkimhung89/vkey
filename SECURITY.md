@@ -1,4 +1,4 @@
-# VKey 0.3.0 — Security and privacy
+# VKey 0.3.2 — Security and privacy
 
 Network: Does this app access the Internet? **NO application network features or requests.**
 Keystroke storage: Does this app save keystrokes? **NO persistent storage.**
@@ -19,13 +19,13 @@ The application-written preferences are `TypingMode` (telex/vni), `VietnameseEna
 ## Verification and limits
 
 - `scripts/audit.sh` checks production source for networking, logging, clipboard, process launching and event-tap API patterns, and records linked libraries, undefined symbols and signing information.
-- Binary links only Apple system frameworks and Swift runtimes. Adapted XKey/OpenKey-derived engine SOURCE is compiled into the binary; no embedded third-party binary frameworks or packages. See THIRD_PARTY_NOTICES.md.
-- The current build output `dist/VKey.app` uses the Developer ID Application certificate with hardened runtime and no entitlements. The build script selects `VKEY_CODESIGN_IDENTITY` or the first available Developer ID Application identity. Build 6 was accepted by Apple Notary Service, and the app plus DMG have stapled tickets; local `spctl` reports `accepted` with source `Notarized Developer ID`. An older installed input-method copy may remain ad-hoc until the build-number-6 app is opened and updates it. **Not App Sandbox enabled:** absence of network entitlements alone does not prohibit network access for a non-sandboxed app. The offline conclusion is based on the small source implementation and symbol inspection, not a claim of an OS-enforced network firewall.
+- Binary links only Apple system frameworks and Swift runtimes. The adapted Vietnamese conversion source is compiled into the binary; no embedded third-party binary frameworks or packages. See THIRD_PARTY_NOTICES.md for provenance and license information.
+- The current build output `dist/VKey.app` uses the Developer ID Application certificate with hardened runtime and no entitlements. The build script selects `VKEY_CODESIGN_IDENTITY` or the first available Developer ID Application identity. Build 10 was accepted by Apple Notary Service, and the app plus DMG have stapled tickets; local `spctl` reports `accepted` with source `Notarized Developer ID`. An older installed input-method copy may remain ad-hoc until the build-number-10 app is opened and updates it. **Not App Sandbox enabled:** absence of network entitlements alone does not prohibit network access for a non-sandboxed app. The offline conclusion is based on the small source implementation and symbol inspection, not a claim of an OS-enforced network firewall.
 - Launched successfully on the build Mac; `lsof -nP -a -c VKey -i` found no Internet sockets at the observation time. This snapshot is not proof of all future behavior.
 - Engine tests pass locally and also under a test-only deny-network sandbox (see test report when available). Full app typing with the Mac physically disconnected has not been tested.
 - No security settings, TCC database, SIP, or Gatekeeper settings were changed.
 
-Development downloaded XKey for reference and consulted Apple documentation. Those developer tools are not part of VKey and are not shipped inside the app.
+Development used local source references and Apple documentation. Development-only material is not part of VKey and is not shipped inside the app.
 
 ## Changes in 0.3.0
 
@@ -36,4 +36,4 @@ Development downloaded XKey for reference and consulted Apple documentation. Tho
 
 ## Engine isolation in 0.2.0
 
-The custom conversion algorithm was replaced by the XKey core. All logging callbacks, dictionary-backed instant restoration and app-inspection hooks were removed. The adapter never feeds committed words or word-break history into a persistent engine. Any upstream history structures are confined to that temporary engine lifetime. Only local character maps and vowel rules are used. No user dictionary, spell-check service, macro manager or network manager is compiled. The production scan now recursively covers Sources/XKeyEngine as well.
+The custom conversion algorithm was replaced by a bounded local conversion engine. The production path has no logging callbacks, dictionary-backed instant restoration or app-inspection hooks. It never feeds committed words or word-break history into persistent storage. Any conversion history exists only for the active word and is released with that word. Only local character maps and vowel rules are used. No user dictionary, spell-check service, macro manager or network manager is compiled. The production scan now recursively covers the conversion-engine sources as well.

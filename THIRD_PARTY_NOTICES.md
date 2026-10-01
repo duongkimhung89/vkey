@@ -79,9 +79,8 @@ existing open-source sources, including:
 
 - an InputMethodKit host and VKey preferences/menu integration;
 - a bounded `Composer` adapter that keeps an engine for the active word only;
-- removal of XKey host/event-tap, logging, dictionary, macro, translation,
-  updater, and application-inspection integrations;
-- removal of persistent word/history behavior from the active conversion path;
+- a local InputMethodKit host and bounded active-word conversion path with no
+  persistent typing history;
 - two corrections in the adapted engine, marked `VKey:` in the source: the
   rhyme "uych" accepts a tone key after its final (huỵch), and "quơ" followed
   by i or n stays "quơi"/"quơn" (Quới, quởn);
@@ -89,10 +88,9 @@ existing open-source sources, including:
   Vietnamese syllable (`VietnameseSyllable`);
 - tests, build/package scripts, documentation, and the VKey app metadata.
 
-VKey is a separate project and should be understood as an independent release,
-rather than as a release issued or endorsed by XKey or OpenKey. Upstream
-authors and contributors retain credit for their work; VKey claims authorship
-only for its own integration and modifications.
+VKey is maintained as a separate project. Upstream authors and contributors
+retain credit for their work; VKey claims authorship only for its own
+integration and modifications.
 
 ## License structure and audit limitation
 

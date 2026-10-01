@@ -12,13 +12,13 @@ Build date: 2026-09-30.
 - Disk image: `./scripts/package.sh`
 
 Output app: `dist/VKey.app`
-Output DMG: `dist/VKey-0.2.0-arm64.dmg`
+Output DMG: `dist/VKey-0.3.2-arm64.dmg`
 
-The compiler succeeds without source warnings. Build 6 is signed with the available Developer ID Application identity using hardened runtime and a secure timestamp; `codesign --verify --deep --strict` passes. Apple Notary Service accepted the DMG, tickets were stapled to the app and DMG, and `spctl --assess` reports `accepted` with source `Notarized Developer ID`. There is no app sandbox or entitlement file. No system security controls were disabled. Build shell scripts are development-only; app runtime launches no subprocesses.
+The compiler succeeds without source warnings. Build 10 is signed with the available Developer ID Application identity using hardened runtime and a secure timestamp; `codesign --verify --deep --strict` passes. Apple Notary Service accepted the DMG, tickets were stapled to the app and DMG, and `spctl --assess` reports `accepted` with source `Notarized Developer ID`. There is no app sandbox or entitlement file. No system security controls were disabled. Build shell scripts are development-only; app runtime launches no subprocesses.
 
 `open` succeeded outside the coding sandbox and the executable process was observed running. The coding sandbox initially returned a LaunchServices error; rerunning with normal desktop access succeeded. UI automation could not attach to this background input-method app. Launch success is not proof of active input-method integration.
 
-81 fixed Telex/VNI cases plus backspace/reset pass; 400/401 upstream transformation rows match, with qusy documented as a known limitation. See reports/engine-tests.txt and reports/INTEGRATION.md for separate actual host-app tests.
+81 fixed Telex/VNI cases plus backspace/reset pass; 400/401 reference transformation rows match, with `qusy` documented as a known edge case. See reports/engine-tests.txt and reports/INTEGRATION.md for separate actual host-app tests.
 
 ## Installation
 
@@ -36,7 +36,7 @@ No Accessibility/Input Monitoring permission required. The user's own input-meth
 
 Chrome: Telex/VNI text, Backspace, Escape, input-source switching and local dummy-password smoke tests passed. TextEdit: VNI formerly failing words passed on 0.2.0. Safari, Finder, Notes, VS Code/Cursor and the complete shortcut/undo matrix remain untested. Offline physical-network-disconnect typing remains untested; engine is tested in a deny-network sandbox.
 
-Known limits: adapted XKey core with IMK host, no spell checking/dictionary or per-app workarounds; the active word uses direct replacement and is ordinary text without marked-text decoration; Backspace removes a raw typing key while composing; Escape restores the raw active word; after commit, normal host editing/undo applies. Maximum composition is 28 raw characters, then it commits. English text can be transformed in Vietnamese mode; choose English as needed. No Intel build or cross-Mac distribution validation.
+Current scope: a local Vietnamese conversion engine with an InputMethodKit host, without spell checking, dictionary data or per-app workarounds. The active word uses direct replacement and is ordinary text without marked-text decoration; Backspace removes a raw typing key while composing; Escape restores the raw active word; after commit, normal host editing/undo applies. Maximum composition is 28 raw characters, then it commits. English text can be transformed in Vietnamese mode; choose English as needed. No Intel build or cross-Mac distribution validation.
 
 ## 0.1.1 registration fix
 
@@ -44,7 +44,7 @@ Corrected bundle identifier to `local.inputmethod.VKey` and the matching IMK con
 
 ## 0.2.0 engine replacement
 
-Replaced the handcrafted Composer algorithm with a bounded adapter to the offline XKey core. The IMKit transport now uses direct replacement for the active word, avoiding marked-text decoration. VKey keeps a separate `VK` status-menu for language and Telex/VNI commands; the macOS input-source menu only selects `ABC` or `VKey`. Preferences remain in the old domain. The corresponding source, tests, build scripts and notices are kept in the repository; the DMG contains the app, a short install guide and an `Applications` shortcut. The app performs the per-user Input Methods copy/register step on its first launch from Applications.
+Replaced the handcrafted Composer algorithm with a bounded adapter to the offline Vietnamese conversion engine. The InputMethodKit transport now uses direct replacement for the active word, avoiding marked-text decoration. VKey keeps a separate `VK` status-menu for language and Telex/VNI commands; the macOS input-source menu only selects `ABC` or `VKey`. Preferences remain in the old domain. The corresponding source, tests, build scripts and notices are kept in the repository; the DMG contains the app, a short install guide and an `Applications` shortcut. The app performs the per-user Input Methods copy/register step on its first launch from Applications.
 
 Observed startup limitation: after terminating/replacing the app, Chrome initially passed several synthetic test keys through before the new input session became active. Repeating the sentence after activation succeeded completely; warm ABC/VKey switching also passed. Cold-start readiness is not claimed fully fixed. Do not interpret an installed or selected source alone as successful typing verification.
 

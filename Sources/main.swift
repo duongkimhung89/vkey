@@ -42,7 +42,7 @@ private struct Client: TextClient {
         input.insertText(text, replacementRange: replacementRange)
     }
     func setMarkedText(_ text: String, selectionRange: NSRange, replacementRange: NSRange) {
-        // A barely visible underline, as XKey draws its marked text.
+        // A barely visible underline for clients that need marked text.
         let marked = NSAttributedString(string: text, attributes: VKeyController.markedTextAttributes)
         input.setMarkedText(marked, selectionRange: selectionRange, replacementRange: replacementRange)
     }
@@ -52,7 +52,7 @@ private struct Client: TextClient {
 final class VKeyController: IMKInputController {
     // The typing logic lives in InputSession.  By default the current word is
     // ordinary document text replaced on each key (`insertText` with a
-    // replacement range, as in XKey's no-underline IMKit mode), because
+    // replacement range), because
     // `setMarkedText` makes the host draw an underline and background.
     private let session = InputSession()
     /// Control+Shift went down with nothing else; releasing it switches language.
@@ -465,7 +465,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     @objc private func about() {
         showAlert("VKey \(version) — bộ gõ offline",
-                  "Telex và VNI • Unicode\nKhông kết nối mạng, không lưu nội dung gõ.\n\nCài đặt: kéo VKey.app vào Applications rồi mở một lần. Lần đầu cần đăng xuất rồi đăng nhập lại, sau đó thêm VKey trong Cài đặt hệ thống → Bàn phím → Nhập văn bản → Sửa → + → Tiếng Việt. Khi cập nhật chỉ cần mở bản mới một lần.\n\nChọn VKey trong menu nguồn nhập của macOS. Nút VI/EN trên thanh menu mở các lệnh Tiếng Việt/English và Telex/VNI; Control + Shift đổi nhanh Việt/Anh.\n\nBackspace xoá một ký tự của từ đang gõ. Escape trả lại các phím đã gõ. Khi kết thúc từ, nếu dấu rơi vào chỗ tiếng Việt không có (windows, user, software…) VKey trả lại đúng các phím đã gõ. Từ tiếng Anh có dạng âm tiết tiếng Việt (test → tét, is → í) thì chuyển sang English hoặc gõ lặp phím dấu để huỷ dấu (tesst → test, passs → pass). Tắt mục “Kiểm tra chính tả” để bỏ dấu tự do (micrô).\n\nKhông cần quyền Accessibility hoặc Input Monitoring.\n\nEngine dựa trên XKey/OpenKey; thông báo bản quyền và license nằm trong Resources/THIRD_PARTY.md và Resources/Licenses/.")
+                  "Telex và VNI • Unicode\nKhông kết nối mạng, không lưu nội dung gõ.\n\nCài đặt: kéo VKey.app vào Applications rồi mở một lần. Lần đầu cần đăng xuất rồi đăng nhập lại, sau đó thêm VKey trong Cài đặt hệ thống → Bàn phím → Nhập văn bản → Sửa → + → Tiếng Việt. Khi cập nhật chỉ cần mở bản mới một lần.\n\nChọn VKey trong menu nguồn nhập của macOS. Nút VI/EN trên thanh menu mở các lệnh Tiếng Việt/English và Telex/VNI; Control + Shift đổi nhanh Việt/Anh.\n\nBackspace xoá một ký tự của từ đang gõ. Escape trả lại các phím đã gõ. Khi kết thúc từ, nếu dấu rơi vào chỗ tiếng Việt không có (windows, user, software…) VKey trả lại đúng các phím đã gõ. Từ tiếng Anh có dạng âm tiết tiếng Việt (test → tét, is → í) thì chuyển sang English hoặc gõ lặp phím dấu để huỷ dấu (tesst → test, passs → pass). Tắt mục “Kiểm tra chính tả” để bỏ dấu tự do (micrô).\n\nKhông cần quyền Accessibility hoặc Input Monitoring.\n\nThông tin nguồn mở, bản quyền và license nằm trong Resources/THIRD_PARTY.md và Resources/Licenses/.")
     }
 }
 let app = NSApplication.shared

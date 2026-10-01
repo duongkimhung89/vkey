@@ -25,7 +25,7 @@ struct KeyStroke {
 /// draws no underline.  A key that only adds its own letter is left to the
 /// application, exactly as without an input method; VKey steps in only when a
 /// key changes letters already typed, and then replaces just the part that
-/// changed.  This is the direct transport of XKey's IMKit mode.  It needs a
+/// changed.  This is VKey's direct InputMethodKit transport.  It needs a
 /// client that reports its selection and honours `replacementRange`.  Clients
 /// that cannot (terminals, some cross-platform toolkits) get the standard
 /// IMKit marked text instead, which every client supports.

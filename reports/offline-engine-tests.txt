@@ -1,5 +1,5 @@
-VKey 0.2.0, adapted XKey engine
+VKey 0.2.0, local Vietnamese conversion engine
 Command: sandbox-exec -p '(version 1)(allow default)(deny network*)' build/engine-tests
 81 fixed conversion cases plus backspace/reset: 0 failures.
-400/401 upstream transformations match; qusy documented as a known upstream limitation.
+400/401 reference transformations match; qusy is documented as a known edge case.
 Scope: engine only, not full GUI offline test.

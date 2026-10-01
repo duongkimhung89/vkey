@@ -2,11 +2,11 @@ import Foundation
 
 enum TypingMode: String { case telex, vni }
 
-/// One XKey engine lives for exactly one active word.  It is created on the
+/// One conversion engine lives for exactly one active word.  It is created on the
 /// word's first key and released on reset, so no engine instance, history or
 /// text survives a committed word.
 struct Composer {
-    static let maximumRawLength = 28 // Stay below XKey's 32-entry buffer capacity.
+    static let maximumRawLength = 28 // Stay below the engine's 32-entry buffer capacity.
     /// The keys that produced `text`, in typing order.
     private(set) var raw = ""
     /// The converted word as it should appear in the document.

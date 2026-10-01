@@ -44,11 +44,11 @@ for pair in corpus {
   else { actual += Composer.convert(word, mode: .telex) + String(c); word = "" }
  }
  actual += Composer.convert(word, mode: .telex)
- // Upstream corpus includes aspirational cases, not only supported behavior.
- if pair[0] == "qusy" && actual == "qusy" { print("KNOWN UPSTREAM LIMIT: qusy remains raw; use quys for quý"); continue }
+ // The reference corpus includes cases that are kept for regression tracking.
+ if pair[0] == "qusy" && actual == "qusy" { print("KNOWN EDGE CASE: qusy remains raw; use quys for quý"); continue }
  if !pair[1].components(separatedBy: " / ").contains(actual) { print("CORPUS FAIL \(pair[0]): \(actual) != \(pair[1])"); failures += 1 }
 }
-print("XKey upstream transformation corpus: \(corpus.count) cases")
+print("Reference transformation corpus: \(corpus.count) cases")
 print("\(cases.count) conversion cases")
 
 // MARK: - What stays in the document when the word ends

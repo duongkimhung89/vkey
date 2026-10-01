@@ -60,7 +60,7 @@ struct VowelSequenceValidator {
 
         // Complete triple vowels (complete = 1)
         [.i, .eCircumflex, .u],  // iêu (tiêu, điều) - ukengine.cpp line 127
-        [.y, .eCircumflex, .u],  // yêu (yêu, yếu) - XKey fix
+        [.y, .eCircumflex, .u],  // yêu (yêu, yếu)
         [.o, .a, .i],  // oai (loai, hoài) - ukengine.cpp line 128
         [.o, .a, .y],  // oay (hoay) - ukengine.cpp line 129
         [.o, .e, .o],  // oeo (kẹo, khéo) - ukengine.cpp line 130

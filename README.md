@@ -31,7 +31,7 @@ Backspace xoá một ký tự của từ đang gõ (`tiếng` → `tiến`) và 
 
 ### Gõ xen tiếng Anh
 
-VKey chỉ có một luật, như Unikey/OpenKey: khi từ kết thúc, nếu dấu đã bỏ rơi vào chỗ tiếng Việt không cho phép (vần hoặc thanh không hợp lệ) thì trả lại đúng các phím đã gõ. Luật này không dùng từ điển và không có ngoại lệ viết tay.
+VKey áp dụng một quy tắc cấu trúc khi từ kết thúc: nếu dấu rơi vào vị trí không hợp lệ trong tiếng Việt, VKey trả lại đúng các phím đã gõ. Luật này không dùng từ điển và không có ngoại lệ viết tay.
 
 | Gõ | Ra | Vì sao |
 | --- | --- | --- |
@@ -41,19 +41,19 @@ VKey chỉ có một luật, như Unikey/OpenKey: khi từ kết thúc, nếu d�
 | `test`, `this`, `is`, `more`, `taxi`, `down` | `tét`, `thí`, `í`, `moẻ`, `tãi`, `dơn` | đúng dạng âm tiết tiếng Việt nên không có gì cho thấy bạn định gõ tiếng Anh; chuyển sang English hoặc gõ lặp phím dấu |
 | `pass`, `off`, `error`, `password` | `pas`, `of`, `eror`, `pasword` | phím dấu lặp là phím huỷ của Telex; gõ thêm một lần nữa (`passs`) để ra đúng chữ |
 
-Trong 1.211 từ tiếng Anh thông dụng của bộ test, 1.081 từ ra đúng như gõ, 40 từ chứa chữ đôi (`ss`, `ff`, `rr`) cần gõ chữ đó ba lần, còn lại là từ có dạng âm tiết tiếng Việt. Mục **Kiểm tra chính tả** trên menu tắt luật này và cả việc chỉ bỏ dấu đúng chỗ, để bỏ dấu tự do như 0.2 (gõ `micrô`). Tiền tố phụ âm lạ như `cr`, `bl` vẫn do engine XKey xử lý như cũ nên `crôm` chưa gõ được.
+Trong 1.211 từ tiếng Anh thông dụng của bộ test, 1.081 từ ra đúng như gõ, 40 từ chứa chữ đôi (`ss`, `ff`, `rr`) cần gõ chữ đó ba lần, còn lại là từ có dạng âm tiết tiếng Việt. Mục **Kiểm tra chính tả** trên menu tắt luật này và cả việc chỉ bỏ dấu đúng chỗ, để bỏ dấu tự do, ví dụ khi gõ `micrô`. Một số cụm phụ âm ngoài phạm vi quy tắc hiện tại, như `cr` và `bl`, chưa được hỗ trợ; vì vậy `crôm` hiện chưa chuyển đổi.
 
 Trong VNI, chữ số đứng sau nguyên âm vẫn là phím dấu (`a1` → `á`), nên `U23`, `A4` cần chuyển sang English.
 
 ## Cách VKey đưa chữ vào ứng dụng
 
-Từ đang gõ là văn bản thường, không gạch chân. Phím nào chỉ thêm chính chữ của nó thì để ứng dụng tự gõ, giống hệt khi không có bộ gõ; VKey chỉ can thiệp khi một phím làm đổi chữ đã có (thêm dấu, mũ), và chỉ thay đúng phần đổi. Đây là cách làm của chế độ direct trong XKey IMKit. Ứng dụng không báo vị trí con trỏ, không di chuyển con trỏ theo chữ gõ, hoặc bỏ qua vùng thay thế sẽ được chuyển sang marked text chuẩn của InputMethodKit với gạch chân rất mờ; VKey chỉ ghi nhớ bundle identifier của ứng dụng đó.
+Từ đang gõ là văn bản thường, không gạch chân. Phím nào chỉ thêm chính chữ của nó thì để ứng dụng tự gõ, giống hệt khi không có bộ gõ; VKey chỉ can thiệp khi một phím làm đổi chữ đã có (thêm dấu, mũ), và chỉ thay đúng phần đổi. Khi ứng dụng không báo vị trí con trỏ, không di chuyển con trỏ theo chữ gõ hoặc bỏ qua vùng thay thế, VKey dùng marked text tiêu chuẩn của InputMethodKit với gạch chân rất mờ. VKey chỉ ghi nhớ bundle identifier của ứng dụng cần cơ chế dự phòng.
 
 ## Trạng thái
 
 `./scripts/test.sh` (chạy không cần giao diện):
 
-- 81 ca chuyển dấu riêng và 400/401 ca của corpus XKey (ca `qusy` còn giữ nguyên, dùng `quys` để ra “quý”).
+- 81 ca chuyển dấu riêng và 400/401 ca trong bộ kiểm thử chuyển đổi tham chiếu (ca `qusy` còn giữ nguyên, dùng `quys` để ra “quý”).
 - 817 từ của một đoạn văn tiếng Việt gõ theo 4 cách (Telex/VNI, dấu cuối từ hoặc ngay sau nguyên âm).
 - 7.672/7.884 âm tiết của từ điển ibus-bamboo (dùng làm dữ liệu test, không đi kèm app) gõ được cả bốn cách. Phần còn lại là tiền tố phụ âm lạ (`crô`, `blô`), phiên âm và vài mục sai chính tả trong chính từ điển.
 - Bộ từ tiếng Anh thông dụng (xem trên).
@@ -61,15 +61,13 @@ Từ đang gõ là văn bản thường, không gạch chân. Phím nào chỉ t
 
 `./scripts/live-test.sh` gõ bằng phím hệ thống thật vào NSTextView, NSTextField và WebKit qua bản VKey đang cài. Script cần quyền Accessibility cho `build/VKeyLiveTest.app` (chỉ công cụ test cần, VKey thì không). Bản 0.3.0 **chưa** được chạy bộ test này và chưa được kiểm tra tay có hệ thống trên Safari, Chrome, Terminal, VS Code; các kiểm tra tay của 0.2.0 nằm trong reports/INTEGRATION.md.
 
-Không phải bản XKey đầy đủ: không có macro, cập nhật, dịch thuật, đồng bộ, event tap hoặc quy tắc riêng cho từng ứng dụng. Phần host dùng InputMethodKit, nên không hứa hành vi giống hoàn toàn bản XKey dùng event tap.
+VKey tập trung vào bộ gõ tiếng Việt offline native cho macOS với Telex, VNI, Unicode và InputMethodKit. Khả năng tương thích có thể khác nhau tùy ứng dụng; kết quả kiểm thử hiện có được ghi ở trên và trong thư mục `reports/`.
 
 Xem SECURITY.md, DEPENDENCIES.md, BUILD.md và [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Mã nguồn tương ứng, script build và các license được công khai trong repository; DMG chứa ứng dụng, hướng dẫn ngắn và shortcut Applications.
 
 ## Nguồn gốc & Lời cảm ơn
 
-VKey là một bộ gõ độc lập, được phát triển trên nền tảng [XKey](https://github.com/xmannv/xkey) và tiếp nối các đóng góp của cộng đồng mã nguồn mở. Đây là một bản phát hành riêng của VKey, không đại diện cho XKey hoặc [OpenKey](https://github.com/tuyenvm/OpenKey), và hiện không có thông tin về sự liên kết hay xác nhận chính thức từ các tác giả upstream.
-
-Engine offline trong `Sources/XKeyEngine` là một subset đã chỉnh sửa của XKey. Theo các ghi chú trong source của XKey, engine này là bản port Swift dựa trên engine C++ của OpenKey; vì vậy mối liên hệ nguồn gốc với OpenKey được ghi nhận riêng để phản ánh đầy đủ lịch sử phát triển. XKey được công bố dưới MIT License; các phần có nguồn gốc OpenKey được giữ theo GPL-3.0. Chi tiết copyright, license và thay đổi nằm trong [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) và `Resources/Licenses/`.
+VKey là một dự án độc lập. Xin cảm ơn các tác giả và cộng đồng XKey, OpenKey cùng các dự án mã nguồn mở liên quan đã chia sẻ nền tảng kỹ thuật cho dự án. Thông tin về nguồn, tác giả, license và các thay đổi được ghi trong [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) và `Resources/Licenses/`.
 
 Phần VKey tích hợp và các thay đổi của project được phát hành theo GPL-3.0. Đây là project cộng đồng miễn phí; việc không thu phí không thay thế các điều kiện license khi phân phối.
 
@@ -77,4 +75,4 @@ Phần VKey tích hợp và các thay đổi của project được phát hành 
 
 Dự án được phát triển với mục đích học tập, nghiên cứu và đóng góp cho cộng đồng bộ gõ tiếng Việt trên macOS.
 
-Dự án được phát hành dưới dạng mã nguồn mở, với mong muốn ghi nhận phù hợp đóng góp của các dự án upstream và phân biệt rõ phần tích hợp, chỉnh sửa của VKey.
+Dự án được phát hành dưới dạng mã nguồn mở, với mong muốn ghi nhận phù hợp các đóng góp và phân biệt rõ phần tích hợp, chỉnh sửa của VKey.

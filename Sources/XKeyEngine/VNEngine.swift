@@ -2395,7 +2395,7 @@ class VNEngine {
             // NOTE: "oa", "oe" cases are handled by the general rule below:
             // "If 1st vowel is 'o' or 'u' -> mark on last vowel"
             // This matches OpenKey behavior where "khoa" + r = "khoả" (mark on 'a')
-            // The old XKey code incorrectly checked for end consonant, but OpenKey doesn't do that.
+            // The general rule applies regardless of whether an ending consonant is present.
             // uo -> mark on 'o'
             else if v1 == VietnameseData.KEY_U && v2 == VietnameseData.KEY_O {
                 vowelWillSetMark = vowelStartIndex + 1
