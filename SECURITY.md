@@ -1,4 +1,4 @@
-# VKey 0.3.4 — Security and privacy
+# VKey 0.3.6 — Security and privacy
 
 Network: Does this app access the Internet? **NO application network features or requests.**
 Keystroke storage: Does this app save keystrokes? **NO persistent storage.**
@@ -6,7 +6,7 @@ Analytics: NO. Telemetry: NO. Third-party tracking: NO. Cloud: NO. Auto update: 
 
 ## Input and permissions
 
-VKey uses Apple's InputMethodKit. macOS sends input to the selected input method for the active text client. The app keeps at most 28 raw characters of the active word in memory to compose Unicode, restore the keys typed and handle Backspace. It asks the text client only for its selection range (where the caret is), never for document contents, and does not use the clipboard. It clears its own active composition on commit, deactivation, activation and a Secure Input event. This is ordinary Swift memory release, not guaranteed cryptographic memory erasure; operating-system memory management, swap and system crash diagnostics are outside the app's control.
+VKey uses Apple's InputMethodKit. macOS sends input to the selected input method for the active text client. The app keeps at most 28 raw characters of the active word in memory to compose Unicode, restore the keys typed and handle Backspace. It asks the text client for its selection range (where the caret is). Once after each activation, at the first key, it also reads at most 28 characters right before the caret, to continue a word whose first keys reached the application before macOS activated VKey; that text is used only to compose the word and is not kept. It does not use the clipboard. It clears its own active composition on commit, deactivation, activation and a Secure Input event. This is ordinary Swift memory release, not guaranteed cryptographic memory erasure; operating-system memory management, swap and system crash diagnostics are outside the app's control.
 
 No Accessibility, Input Monitoring, screen recording, full disk access or administrator access is required by the app. Users drag VKey.app to Applications and open it once; VKey copies and registers its own bundle in the user's `~/Library/Input Methods`, then the user selects it in macOS Keyboard settings. There are no event taps, global keyboard monitors, synthetic backspaces, password-field workarounds, background helper processes or launch agents.
 

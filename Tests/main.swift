@@ -274,8 +274,13 @@ class FakeClient: TextClient {
  /// How many times the input method itself wrote to the document.
  var edits = 0
 
+ var exposesText = true
  var text: String { document as String }
  func selectedRange() -> NSRange { reportsSelection ? selection : NSRange(location: NSNotFound, length: 0) }
+ func text(in range: NSRange) -> String? {
+  guard exposesText, range.location >= 0, range.location + range.length <= document.length else { return nil }
+  return document.substring(with: range)
+ }
  func insertText(_ text: String, replacementRange: NSRange) {
   edits += 1
   var target = marked ?? selection
@@ -520,6 +525,79 @@ do {
  directSession.commit(client: direct)
  type("s", into: direct, with: directSession)
  expect(direct.text, "tôis", "commit on focus change, direct")
+}
+
+// macOS activates the input method for an application a little after it
+// becomes active; keys pressed in between are typed by the application
+// itself.  The first key VKey sees then continues the word those keys began.
+do {
+ func gap(_ mode: TypingMode, _ raw: String, unseen: Int, after prior: String,
+          configure: (FakeClient, InputSession) -> Void = { _, _ in }) -> String {
+  let client = FakeClient(), session = InputSession()
+  session.mode = mode
+  client.document.setString(prior)
+  client.click(at: client.document.length)
+  configure(client, session)
+  session.resetForNewClient()
+  for c in raw.prefix(unseen) { client.pressNatively(KeyStroke(keyCode: 0, characters: String(c))) }
+  type(String(raw.dropFirst(unseen)) + " ", into: client, with: session)
+  return client.text
+ }
+ var gapCases = 0
+ for (mode, raw, _) in cases + commitCases {
+  for prior in ["", "xin ", "tôi, "] {
+   for unseen in 0..<raw.count {
+    gapCases += 1
+    expect(gap(mode, raw, unseen: unseen, after: prior), prior + committed(raw, mode) + " ",
+           "\(mode) \(raw) after \(unseen) keys typed before activation, following \(prior.debugDescription)")
+   }
+  }
+ }
+ print("Keys before activation: \(gapCases) cases")
+ expect(gap(.vni, "o73", unseen: 1, after: "", configure: { client, _ in client.exposesText = false }), "o73 ",
+        "a client that does not expose its text keeps the keys as typed")
+ expect(gap(.vni, "o73", unseen: 1, after: "", configure: { _, session in session.prefersMarkedText = true }), "o73 ",
+        "marked text does not take over text before the caret")
+ expect(gap(.vni, "a2", unseen: 1, after: "đ"), "đa2 ",
+        "letters that follow a Vietnamese letter are not a word of their own")
+ // Only the first key after activation: later on, and after a click, text
+ // before the caret was typed earlier on purpose.
+ do {
+  let client = FakeClient(), session = InputSession()
+  session.mode = .telex
+  session.resetForNewClient()
+  type("xin ", into: client, with: session)
+  client.pressNatively(KeyStroke(keyCode: 0, characters: "c"))
+  client.pressNatively(KeyStroke(keyCode: 0, characters: "a"))
+  type("s ", into: client, with: session)
+  expect(client.text, "xin cas ", "keys after the first are not joined to text before the caret")
+ }
+ do {
+  let client = FakeClient(), session = InputSession()
+  session.mode = .telex
+  client.document.setString("ca")
+  session.resetForNewClient()
+  session.commit(client: client)
+  client.click(at: 2)
+  type("s ", into: client, with: session)
+  expect(client.text, "cas ", "a click before the first key leaves the text before the caret alone")
+ }
+}
+
+// Activation without a usable deactivation client must not carry a late
+// caret trail into another field whose caret happens to match that trail.
+do {
+ final class UnconfirmedClient: FakeClient {
+  override func selectedRange() -> NSRange { NSRange(location: 0, length: 0) }
+ }
+ let previous = UnconfirmedClient(), session = InputSession()
+ session.mode = .vni
+ type("ab", into: previous, with: session)
+ session.resetForNewClient()
+ let next = FakeClient()
+ type("o73 lam2 ", into: next, with: session)
+ expect(previous.text, "ab", "activation leaves the previous client's text intact")
+ expect(next.text, "ở làm ", "activation discards unconfirmed caret positions")
 }
 
 // Fast typing into a client whose text lives in another process (browsers,

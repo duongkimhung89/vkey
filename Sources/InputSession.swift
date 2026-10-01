@@ -4,6 +4,8 @@ import Foundation
 /// typing logic can be exercised without a running input method.
 protocol TextClient {
     func selectedRange() -> NSRange
+    /// The document text in `range`, or nil when the client does not say.
+    func text(in range: NSRange) -> String?
     func insertText(_ text: String, replacementRange: NSRange)
     func setMarkedText(_ text: String, selectionRange: NSRange, replacementRange: NSRange)
 }
@@ -68,11 +70,19 @@ final class InputSession {
     /// trail means VKey does not know and goes by the client's report.
     private var trail: [Int] = []
     private var markedActive = false
+    /// macOS activates the input method for a client a little after the
+    /// application becomes active, and keys pressed in between reach the
+    /// application without VKey.  Until the first key VKey does see, the
+    /// letters right before the caret may be the start of the word in
+    /// progress.
+    private var mayFollowUnseenKeys = false
 
     /// Returns true when the key was consumed.
     func handle(_ key: KeyStroke, client: TextClient) -> Bool {
         let selection = client.selectedRange()
         synchronize(with: selection)
+        let followsUnseenKeys = mayFollowUnseenKeys
+        mayFollowUnseenKeys = false
 
         if key.hasShortcutModifier {
             finish(with: composer.committedText, client: client, selection: selection)
@@ -106,15 +116,15 @@ final class InputSession {
             } else {
                 start = trail.last ?? selection.location
                 if trail.isEmpty { trail = [start] }
+                if followsUnseenKeys { adoptWordBeforeCaret(client: client, selection: selection) }
             }
         }
-        let before = composer.text
         composer.append(character)
         if markedActive {
             showMarked(composer.text, client: client)
             return true
         }
-        if composer.text == before + String(character) {
+        if composer.text == written + String(character) {
             // The key adds only itself: the application types it.
             moved(to: composer.text)
             return false
@@ -142,6 +152,8 @@ final class InputSession {
         }
         reset()
         trail = []
+        // A click placed the caret: what is before it was not just typed.
+        mayFollowUnseenKeys = false
     }
 
     /// Forget the active word without touching the client.
@@ -150,6 +162,42 @@ final class InputSession {
         start = NSNotFound
         written = ""
         markedActive = false
+    }
+
+    /// Caret history belongs to one client. Ordinary word boundaries keep it
+    /// to tolerate late reports, but a new input context must start fresh.
+    func resetForNewClient() {
+        reset()
+        trail = []
+        mayFollowUnseenKeys = true
+    }
+
+    /// Take the word the application typed by itself before VKey was active
+    /// as the start of the word in progress: the keys that make it up, right
+    /// before the caret and after a word boundary.  Only plain keys qualify,
+    /// as that is all an application types without an input method.
+    private func adoptWordBeforeCaret(client: TextClient, selection: NSRange) {
+        guard selection.location != NSNotFound, selection.length == 0, start == selection.location, start > 0 else { return }
+        let window = min(start, Composer.maximumRawLength)
+        guard let text = client.text(in: NSRange(location: start - window, length: window)),
+              text.utf16.count == window else { return }
+        let before = Array(text)
+        var first = before.count
+        while first > 0, composingCharacter(for: KeyStroke(keyCode: 0, characters: String(before[first - 1]))) != nil {
+            first -= 1
+        }
+        guard first < before.count else { return }
+        // The word must start in what was read, after something that is not
+        // part of a word (a Vietnamese letter typed earlier is).
+        if first > 0 {
+            guard !before[first - 1].isLetter, !before[first - 1].isNumber else { return }
+        } else {
+            guard window == start else { return }
+        }
+        let word = String(before[first...])
+        for c in word { composer.append(c) }
+        start -= word.utf16.count
+        written = word
     }
 
     private func composingCharacter(for key: KeyStroke) -> Character? {

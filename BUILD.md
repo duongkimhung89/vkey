@@ -12,9 +12,9 @@ Build date: 2026-10-01.
 - Disk image: `./scripts/package.sh`
 
 Output app: `dist/VKey.app`
-Output DMG: `dist/VKey-0.3.4-arm64.dmg`
+Output DMG: `dist/VKey-0.3.6-arm64.dmg`
 
-The compiler succeeds without source warnings. Build 13 is signed with the available Developer ID Application identity using hardened runtime and a secure timestamp; `codesign --verify --deep --strict` passes. Apple Notary Service accepted the DMG, tickets were stapled to the app and DMG, and `spctl --assess` reports `accepted` with source `Notarized Developer ID`. There is no app sandbox or entitlement file. No system security controls were disabled. Build shell scripts are development-only; app runtime launches no subprocesses.
+The compiler succeeds without source warnings. Build 16 is signed with the available Developer ID Application identity using hardened runtime and a secure timestamp; `codesign --verify --deep --strict` passes. Apple Notary Service accepted the DMG, tickets were stapled to the app and DMG, and `spctl --assess` reports `accepted` with source `Notarized Developer ID`. There is no app sandbox or entitlement file. No system security controls were disabled. Build shell scripts are development-only; app runtime launches no subprocesses.
 
 `open` succeeded outside the coding sandbox and the executable process was observed running. The coding sandbox initially returned a LaunchServices error; rerunning with normal desktop access succeeded. UI automation could not attach to this background input-method app. Launch success is not proof of active input-method integration.
 
@@ -47,6 +47,12 @@ Corrected bundle identifier to `local.inputmethod.VKey` and the matching IMK con
 Replaced the handcrafted Composer algorithm with a bounded adapter to the offline Vietnamese conversion engine. The InputMethodKit transport now uses direct replacement for the active word, avoiding marked-text decoration. VKey keeps a separate `VK` status-menu for language and Telex/VNI commands; the macOS input-source menu only selects `ABC` or `VKey`. Preferences remain in the old domain. The corresponding source, tests, build scripts and notices are kept in the repository; the DMG contains the app, a short install guide and an `Applications` shortcut. The app performs the per-user Input Methods copy/register step on its first launch from Applications.
 
 Observed startup limitation: after terminating/replacing the app, Chrome initially passed several synthetic test keys through before the new input session became active. Repeating the sentence after activation succeeded completely; warm ABC/VKey switching also passed. Cold-start readiness is not claimed fully fixed. Do not interpret an installed or selected source alone as successful typing verification.
+
+## 0.3.6 (build 16)
+
+Keys pressed right after switching to an application could be typed without Vietnamese conversion (`o73` instead of `ở`, `lam2` instead of `làm`), most often in Zalo. macOS activates the input method for an application 10–25 ms after it becomes active, and keys pressed in between reach the application without VKey. The first key VKey then sees now continues the word those keys began, read from the letters right before the caret; see reports/COMPOSITION-STYLE.md. Build 14, which forced marked text in Zalo by bundle identifier, was a local experiment: it did not address this and is not part of the release.
+
+Packaged and released with a Developer ID signature, hardened runtime, and Apple notarization; the DMG ticket was stapled and the app reports `accepted` with source `Notarized Developer ID`. Submission ID: `3c19cb0c-9d83-4278-b87d-505c7c04effa`.
 
 ## 0.3.4 (build 13)
 

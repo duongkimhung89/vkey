@@ -2,11 +2,11 @@
 
 Bộ gõ tiếng Việt native cho macOS, Telex/VNI, Unicode, hoàn toàn offline.
 Cho Apple Silicon, macOS 13 trở lên; mới build/chạy trên macOS 27.0.1.
-Bản mới nhất là 0.3.4, có DMG trên GitHub Releases và cài được qua Homebrew (`brew install --cask duongkimhung89/vkey/vkey`).
+Bản mới nhất là 0.3.6, có DMG trên GitHub Releases và cài được qua Homebrew (`brew install --cask duongkimhung89/vkey/vkey`).
 
 ## Cài từ DMG
 
-1. Tải bản mới nhất [`VKey-0.3.4-arm64.dmg`](https://github.com/duongkimhung89/vkey/releases/latest) từ GitHub Releases rồi mở file DMG.
+1. Tải bản mới nhất [`VKey-0.3.6-arm64.dmg`](https://github.com/duongkimhung89/vkey/releases/latest) từ GitHub Releases rồi mở file DMG.
 2. Kéo **VKey.app** từ DMG vào **Applications**.
 3. Mở **VKey.app** một lần từ Applications. VKey sẽ tự copy và đăng ký phần input method ở vị trí macOS yêu cầu, rồi báo bước tiếp theo. Không cần tự mở `~/Library/Input Methods`.
 4. Đăng xuất tài khoản macOS rồi đăng nhập lại để macOS cập nhật danh sách nguồn nhập.
@@ -15,7 +15,7 @@ Bản mới nhất là 0.3.4, có DMG trên GitHub Releases và cài được qu
 
 Từ 0.3.0, cập nhật không cần đăng xuất: mở bản VKey.app mới một lần, nó tự thay bản trong `~/Library/Input Methods` và khởi động lại bộ gõ đang chạy. Khi build từ source, `./scripts/dev-install.sh` làm cả ba việc build, test, cài.
 
-Bản 0.3.4 đã ký bằng Developer ID Application, bật hardened runtime và được Apple notarize/staple; bản 0.3.0 chưa được notarize. Nếu macOS vẫn chặn trên một máy cụ thể, không tắt Gatekeeper/SIP hay xoá quarantine để vượt chặn; hãy kiểm tra lại checksum và trạng thái macOS.
+Bản 0.3.6 đã ký bằng Developer ID Application, bật hardened runtime và được Apple notarize/staple; bản 0.3.0 chưa được notarize. Nếu macOS vẫn chặn trên một máy cụ thể, không tắt Gatekeeper/SIP hay xoá quarantine để vượt chặn; hãy kiểm tra lại checksum và trạng thái macOS.
 
 ## Gõ thử
 
@@ -64,7 +64,7 @@ Giới hạn đã biết: ở ứng dụng không báo cú bấm chuột cho b�
 - Gõ nhanh vào ô văn bản giả báo vị trí con trỏ chậm ngẫu nhiên 0–4 phím (cả đoạn văn 817 từ, bốn cách gõ, có Backspace): văn bản ra phải giống hệt ô không chậm.
 - Mô phỏng phiên gõ trên ô văn bản giả: câu xen Anh–Việt, Backspace, Escape, phím tắt, chọn vùng rồi xoá, bấm chuột giữa từ, thanh địa chỉ có gợi ý tự điền, ứng dụng không hỗ trợ thay thế trực tiếp.
 
-`./scripts/live-test.sh` gõ bằng phím hệ thống thật vào NSTextView, NSTextField và WebKit qua bản VKey đang cài. Script cần quyền Accessibility cho `build/VKeyLiveTest.app` (chỉ công cụ test cần, VKey thì không). Lỗi bộ test từng báo không nhận được phím trên macOS 27.0.1 là do chỉ chạy `RunLoop` mà không xử lý hàng đợi sự kiện của AppKit; đã sửa để lấy và chuyển tiếp sự kiện bàn phím. Cách đọc `contenteditable` cũng đã sửa để giữ xuống dòng. Ngày 01/10/2026, 102 ca đều đã đạt qua lần chạy đầy đủ và chạy lại nhóm bị ảnh hưởng; xem [báo cáo live test](reports/LIVE-TEST.md). Bản 0.3.4 được dùng thử khi gõ hằng ngày nhưng chưa được kiểm tra tay có hệ thống trên Safari, Chrome, Terminal, VS Code; các kiểm tra tay của 0.2.0 nằm trong reports/INTEGRATION.md.
+`./scripts/live-test.sh` gõ bằng phím hệ thống thật vào NSTextView, NSTextField và WebKit qua bản VKey đang cài. Script cần quyền Accessibility cho `build/VKeyLiveTest.app` (chỉ công cụ test cần, VKey thì không). Lỗi bộ test từng báo không nhận được phím trên macOS 27.0.1 là do chỉ chạy `RunLoop` mà không xử lý hàng đợi sự kiện của AppKit; đã sửa để lấy và chuyển tiếp sự kiện bàn phím. Cách đọc `contenteditable` cũng đã sửa để giữ xuống dòng. Ngày 01/10/2026, 102 ca đều đã đạt qua lần chạy đầy đủ và chạy lại nhóm bị ảnh hưởng; xem [báo cáo live test](reports/LIVE-TEST.md). Bản 0.3.6 được dùng thử khi gõ hằng ngày nhưng chưa được kiểm tra tay có hệ thống trên Safari, Chrome, Terminal, VS Code; các kiểm tra tay của 0.2.0 nằm trong reports/INTEGRATION.md.
 
 VKey tập trung vào bộ gõ tiếng Việt offline native cho macOS với Telex, VNI, Unicode và InputMethodKit. Khả năng tương thích có thể khác nhau tùy ứng dụng; kết quả kiểm thử hiện có được ghi ở trên và trong thư mục `reports/`.
 

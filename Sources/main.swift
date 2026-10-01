@@ -37,6 +37,7 @@ private struct Client: TextClient {
     func insertText(_ text: String, replacementRange: NSRange) {
         input.insertText(text, replacementRange: replacementRange)
     }
+    func text(in range: NSRange) -> String? { input.attributedSubstring(from: range)?.string }
     func setMarkedText(_ text: String, selectionRange: NSRange, replacementRange: NSRange) {
         // A barely visible underline for clients that need marked text.
         let marked = NSAttributedString(string: text, attributes: VKeyController.markedTextAttributes)
@@ -123,7 +124,7 @@ final class VKeyController: IMKInputController {
         }
     }
     override func activateServer(_ sender: Any!) {
-        session.reset()
+        session.resetForNewClient()
         toggleArmed = false
         let preferences = Preferences.shared
         session.mode = preferences.mode
