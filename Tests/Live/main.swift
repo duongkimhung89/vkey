@@ -23,7 +23,18 @@ func source(_ id: String) -> TISInputSource? {
  let filter = [kTISPropertyInputSourceID as String: id] as CFDictionary
  return (TISCreateInputSourceList(filter, false)?.takeRetainedValue() as? [TISInputSource])?.first
 }
-func spin(_ seconds: TimeInterval) { RunLoop.current.run(until: Date().addingTimeInterval(seconds)) }
+func spin(_ seconds: TimeInterval) {
+ // Running NSRunLoop alone services timers and IPC but leaves AppKit's
+ // keyboard events queued. This synchronous test must dispatch them just
+ // as NSApplication.run() does, including routing through the input method.
+ let deadline = Date().addingTimeInterval(seconds)
+ while Date() < deadline {
+  if let event = NSApp.nextEvent(matching: .any, until: deadline, inMode: .default, dequeue: true) {
+   NSApp.sendEvent(event)
+  }
+  NSApp.updateWindows()
+ }
+}
 
 let preferences = UserDefaults(suiteName: "local.vkey.inputmethod")!
 let savedPreferences = ["TypingMode", "VietnameseEnabled"].map { ($0, preferences.object(forKey: $0)) }
@@ -169,7 +180,9 @@ let targets = [
         text: { javascript("i.value") }, pause: 0.03),
  Target(name: "WebKit contenteditable", focus: { window.makeFirstResponder(web); _ = javascript("e.focus(); ''") },
         clear: { _ = javascript("e.textContent = ''; e.focus(); ''") },
-        text: { javascript("e.textContent").replacingOccurrences(of: "\u{a0}", with: " ") }, pause: 0.03),
+        // Enter creates block/BR elements in an editable div. innerText
+        // preserves their visible line breaks; textContent joins the lines.
+        text: { javascript("e.innerText").replacingOccurrences(of: "\u{a0}", with: " ") }, pause: 0.03),
 ]
 
 let telex: [(String, String, String)] = [
