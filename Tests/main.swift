@@ -284,7 +284,10 @@ class FakeClient: TextClient {
  func insertText(_ text: String, replacementRange: NSRange) {
   edits += 1
   var target = marked ?? selection
-  if replacementRange.location != NSNotFound, honoursReplacement { target = replacementRange }
+  // A range outside the text is ignored, as hosts do: the text goes in at the caret.
+  if replacementRange.location != NSNotFound, honoursReplacement, NSMaxRange(replacementRange) <= document.length {
+   target = replacementRange
+  }
   replace(target, with: text)
   marked = nil
  }
@@ -582,6 +585,55 @@ do {
   type("s ", into: client, with: session)
   expect(client.text, "cas ", "a click before the first key leaves the text before the caret alone")
  }
+}
+
+// A chat box rebuilt on sending (Zalo): the input method is activated again
+// for the same, still active application, and until the next key lands the
+// field reports the caret and text of the message just sent.  The new
+// message must come out exactly as in a fresh field.
+do {
+ final class RebuiltFieldClient: FakeClient {
+  var stale: (text: String, caret: Int)?
+  func send() {
+   stale = (text, selection.location)
+   document.setString("")
+   selection = NSRange(location: 0, length: 0)
+  }
+  override func selectedRange() -> NSRange {
+   stale.map { NSRange(location: $0.caret, length: 0) } ?? super.selectedRange()
+  }
+  override func text(in range: NSRange) -> String? {
+   guard let stale else { return super.text(in: range) }
+   let old = stale.text as NSString
+   guard range.location >= 0, range.location + range.length <= old.length else { return nil }
+   return old.substring(with: range)
+  }
+  override func insertText(_ text: String, replacementRange: NSRange) {
+   super.insertText(text, replacementRange: replacementRange)
+   stale = nil
+  }
+  override func pressNatively(_ key: KeyStroke) {
+   super.pressNatively(key)
+   stale = nil
+  }
+ }
+ var rebuiltCases = 0
+ for (mode, raw, _) in cases + commitCases {
+  for sent in ["", "o", "o2", "ab", "xin chao", "tôi"] {
+   let client = RebuiltFieldClient(), session = InputSession()
+   session.mode = mode
+   client.document.setString(sent)
+   client.click(at: client.document.length)
+   client.send()
+   session.resetForNewClient()
+   session.noKeysWereMissed()
+   type(raw + " ", into: client, with: session)
+   rebuiltCases += 1
+   expect(client.text, committed(raw, mode) + " ",
+          "\(mode) \(raw) after sending \(sent.debugDescription) from a rebuilt field")
+  }
+ }
+ print("Rebuilt field: \(rebuiltCases) cases")
 }
 
 // Activation without a usable deactivation client must not carry a late

@@ -31,6 +31,32 @@ final class Preferences {
     }
 }
 
+/// When an application last became active, as macOS announces it.  Keys
+/// reach an application without VKey only between that moment and the input
+/// method's activation for it, 10–25 ms later, so only while the user was
+/// already typing: the next key VKey sees then follows within one interval
+/// between keys.
+enum ApplicationActivity {
+    /// Longer than the pause between keys of anyone typing on through an
+    /// application switch; shorter than the time it takes to start typing
+    /// after one.
+    static let typingInterval: TimeInterval = 0.3
+    private static var lastActivation = -TimeInterval.infinity
+
+    static func start() {
+        NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main) { _ in
+            lastActivation = ProcessInfo.processInfo.systemUptime
+        }
+    }
+
+    /// Whether a key pressed at `timestamp` (system uptime, as in NSEvent)
+    /// can follow keys the application received before VKey was active.
+    static func keyMayFollowMissedKeys(at timestamp: TimeInterval) -> Bool {
+        timestamp - lastActivation < typingInterval
+    }
+}
+
 private struct Client: TextClient {
     let input: IMKTextInput
     func selectedRange() -> NSRange { input.selectedRange() }
@@ -73,6 +99,7 @@ final class VKeyController: IMKInputController {
         }
         guard event.type == .keyDown else { return false }
         toggleArmed = false
+        if !ApplicationActivity.keyMayFollowMissedKeys(at: event.timestamp) { session.noKeysWereMissed() }
 
         // Secure Input is owned by macOS. Never attempt a fallback or a global hook.
         let secure = IsSecureEventInputEnabled()
@@ -200,6 +227,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     private func startInputMethod() {
+        ApplicationActivity.start()
         server = IMKServer(name: "local.inputmethod.VKey_Connection", bundleIdentifier: inputMethodBundleIdentifier)
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         let menu = NSMenu()

@@ -80,7 +80,7 @@ final class InputSession {
     /// Returns true when the key was consumed.
     func handle(_ key: KeyStroke, client: TextClient) -> Bool {
         let selection = client.selectedRange()
-        synchronize(with: selection)
+        synchronize(with: selection, client: client)
         let followsUnseenKeys = mayFollowUnseenKeys
         mayFollowUnseenKeys = false
 
@@ -139,7 +139,7 @@ final class InputSession {
     /// word; otherwise the text is left as it is.
     func finishWord(client: TextClient) {
         let selection = client.selectedRange()
-        synchronize(with: selection)
+        synchronize(with: selection, client: client)
         finish(with: composer.committedText, client: client, selection: selection)
     }
 
@@ -170,6 +170,15 @@ final class InputSession {
         reset()
         trail = []
         mayFollowUnseenKeys = true
+    }
+
+    /// Every key the application received went through VKey: it was not
+    /// switched to while the user was typing.  Text before the caret is then
+    /// not the start of a word, and may not even be current: applications
+    /// that rebuild their text field (a chat box cleared on sending) report
+    /// the old field's text until the next key lands.
+    func noKeysWereMissed() {
+        mayFollowUnseenKeys = false
     }
 
     /// Take the word the application typed by itself before VKey was active
@@ -295,6 +304,9 @@ final class InputSession {
             return
         }
 
+        if client.text(in: NSRange(location: start, length: old.count)) != written {
+            relocate(client: client, selection: selection)
+        }
         var kept = 0
         while kept < old.count, kept < new.count, old[kept] == new[kept] { kept += 1 }
         let inserted = String(utf16CodeUnits: Array(new[kept...]), count: new.count - kept)
@@ -320,9 +332,10 @@ final class InputSession {
     /// Match the reported caret against the trail.  A caret VKey did not put
     /// there means the user clicked, selected or the application changed the
     /// text: the word is already in the document, so only VKey's state goes.
-    private func synchronize(with selection: NSRange) {
+    private func synchronize(with selection: NSRange, client: TextClient) {
         guard !markedActive, !trail.isEmpty else { return }
         guard selection.location != NSNotFound, let seen = trail.firstIndex(of: selection.location) else {
+            if relocate(client: client, selection: selection) { return }
             reset()
             trail = []
             return
@@ -337,5 +350,25 @@ final class InputSession {
                 onDirectTextUnsupported?()
             }
         }
+    }
+
+    /// Find the active word right before the reported caret.  A client that
+    /// has just rebuilt its text field may report the old field's caret for
+    /// the word's first key, so VKey's record puts the word in the wrong
+    /// place; the next report, or the document itself, shows where it is.
+    /// Only a word that starts after a word boundary qualifies.
+    @discardableResult
+    private func relocate(client: TextClient, selection: NSRange) -> Bool {
+        let length = written.utf16.count
+        guard length > 0, selection.location != NSNotFound, selection.length == 0,
+              selection.location >= length, selection.location - length != start else { return false }
+        let location = selection.location - length
+        let boundary = min(location, 1)
+        guard let text = client.text(in: NSRange(location: location - boundary, length: length + boundary)),
+              text.utf16.count == length + boundary, text.hasSuffix(written) else { return false }
+        if boundary > 0, let before = text.first, before.isLetter || before.isNumber { return false }
+        start = location
+        trail = [selection.location]
+        return true
     }
 }
