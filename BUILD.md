@@ -1,6 +1,6 @@
 # Build and installation report
 
-Build date: 2026-09-30.
+Build date: 2026-10-01.
 
 - Host: macOS 27.0.1 (26A434), Apple Silicon arm64.
 - Xcode: 27.0 (27A266a).
@@ -12,9 +12,9 @@ Build date: 2026-09-30.
 - Disk image: `./scripts/package.sh`
 
 Output app: `dist/VKey.app`
-Output DMG: `dist/VKey-0.3.2-arm64.dmg`
+Output DMG: `dist/VKey-0.3.4-arm64.dmg`
 
-The compiler succeeds without source warnings. Build 10 is signed with the available Developer ID Application identity using hardened runtime and a secure timestamp; `codesign --verify --deep --strict` passes. Apple Notary Service accepted the DMG, tickets were stapled to the app and DMG, and `spctl --assess` reports `accepted` with source `Notarized Developer ID`. There is no app sandbox or entitlement file. No system security controls were disabled. Build shell scripts are development-only; app runtime launches no subprocesses.
+The compiler succeeds without source warnings. Build 13 is signed with the available Developer ID Application identity using hardened runtime and a secure timestamp; `codesign --verify --deep --strict` passes. Apple Notary Service accepted the DMG, tickets were stapled to the app and DMG, and `spctl --assess` reports `accepted` with source `Notarized Developer ID`. There is no app sandbox or entitlement file. No system security controls were disabled. Build shell scripts are development-only; app runtime launches no subprocesses.
 
 `open` succeeded outside the coding sandbox and the executable process was observed running. The coding sandbox initially returned a LaunchServices error; rerunning with normal desktop access succeeded. UI automation could not attach to this background input-method app. Launch success is not proof of active input-method integration.
 
@@ -48,9 +48,13 @@ Replaced the handcrafted Composer algorithm with a bounded adapter to the offlin
 
 Observed startup limitation: after terminating/replacing the app, Chrome initially passed several synthetic test keys through before the new input session became active. Repeating the sentence after activation succeeded completely; warm ABC/VKey switching also passed. Cold-start readiness is not claimed fully fixed. Do not interpret an installed or selected source alone as successful typing verification.
 
-## 0.3.3 (build 11)
+## 0.3.4 (build 13)
 
-Fast typing: the input session tracks the caret positions its edits lead to, so a caret reported a few edits late (browsers, Electron) no longer discards the active word; see reports/COMPOSITION-STYLE.md. Clicks passed to the input method end the word. The status menu splits Hướng dẫn and Giới thiệu, the latter showing the running version; the spelling switch is removed and spell checking is always on. Not yet notarized or released.
+Fast typing: the input session tracks the caret positions its edits lead to, so a caret reported a few edits late (browsers, Electron) no longer discards the active word; see reports/COMPOSITION-STYLE.md. Clicks passed to the input method end the word. The status menu splits Hướng dẫn and Giới thiệu, the latter showing the running version; the spelling switch is removed and spell checking is always on.
+
+Telex treats `[` and `]` as punctuation; as shortcuts for ơ/ư, typing `[[` emptied the engine buffer and deleted the word. Switching language or Telex/VNI ends the word as a space does (an English word comes back as typed) while the caret is still at it. Live test expectations follow the current rules and add a fast pass (5 ms between keys); the unit tests fail if dictionary coverage drops below 7,672 syllables.
+
+Builds 11 and 12 were tested locally as 0.3.3, which was never released. The live test could not run on macOS 27.0.1: with the Accessibility permission granted and its window frontmost, none of the key events it posts are delivered, so behaviour in real applications rests on manual typing. Packaged and released with a Developer ID signature, hardened runtime, and Apple notarization; the DMG ticket was stapled and the app reports `accepted` with source `Notarized Developer ID`. Submission ID: `90451695-112e-4256-8102-6f5d7f11c8aa`.
 
 ## 0.3.2 (build 10)
 

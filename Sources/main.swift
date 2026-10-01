@@ -82,11 +82,11 @@ final class VKeyController: IMKInputController {
         }
         let preferences = Preferences.shared
         guard preferences.enabled else {
-            session.commit(client: client)
+            session.finishWord(client: client)
             return false
         }
         if session.mode != preferences.mode {
-            session.commit(client: client)
+            session.finishWord(client: client)
             session.mode = preferences.mode
         }
         let flags = event.modifierFlags
@@ -104,7 +104,7 @@ final class VKeyController: IMKInputController {
             toggleArmed = true
         } else if toggleArmed, flags.isSubset(of: chord) {
             toggleArmed = false
-            session.commit(client: client)
+            session.finishWord(client: client)
             Preferences.shared.enabled.toggle()
             AppDelegate.shared.refreshStatus()
         } else {

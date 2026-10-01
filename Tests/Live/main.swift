@@ -16,7 +16,7 @@ import WebKit
 let keyCodes: [Character: UInt16] = [
  "a":0,"s":1,"d":2,"f":3,"h":4,"g":5,"z":6,"x":7,"c":8,"v":9,"b":11,"q":12,"w":13,"e":14,"r":15,"y":16,"t":17,
  "1":18,"2":19,"3":20,"4":21,"6":22,"5":23,"9":25,"7":26,"8":28,"0":29,"o":31,"u":32,"i":34,"p":35,"l":37,"j":38,
- "k":40,",":43,"n":45,"m":46,".":47," ":49,"\n":36,
+ "k":40,",":43,"n":45,"m":46,".":47," ":49,"\n":36,"[":33,"]":30,
 ]
 
 func source(_ id: String) -> TISInputSource? {
@@ -75,7 +75,8 @@ func currentSourceID() -> String {
  guard let pointer = TISGetInputSourceProperty(current, kTISPropertyInputSourceID) else { return "?" }
  return Unmanaged<CFString>.fromOpaque(pointer).takeUnretainedValue() as String
 }
-print("active: \(app.isActive), key window: \(window.isKeyWindow), input source: \(currentSourceID()), "
+print("frontmost: \(NSWorkspace.shared.frontmostApplication?.bundleIdentifier ?? "?"), "
+      + "active: \(app.isActive), key window: \(window.isKeyWindow), input source: \(currentSourceID()), "
       + "context source: \(textView.inputContext?.selectedKeyboardInputSource ?? "none")")
 
 guard CGPreflightPostEventAccess() else {
@@ -87,6 +88,9 @@ guard CGPreflightPostEventAccess() else {
 
 var keysSent = 0
 /// "<" is Backspace, "^" is Escape; capitals are typed with Shift.
+// How many key presses reach this application (a count only).
+var keyDownsReceived = 0
+NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in keyDownsReceived += 1; return event }
 func type(_ keys: String, pause: TimeInterval) {
  let eventSource = CGEventSource(stateID: .hidSystemState)
  for c in keys {
@@ -99,17 +103,30 @@ func type(_ keys: String, pause: TimeInterval) {
    code = mapped
    shift = c.isUppercase
   }
-  guard app.isActive, window.isKeyWindow else {
+  // NSApp can consider itself active while the window server still sends
+  // keys to another application; ask the window server too.
+  guard app.isActive, window.isKeyWindow,
+        NSWorkspace.shared.frontmostApplication?.processIdentifier == getpid() else {
    print("The test window lost keyboard focus; stopping so that no key reaches another application.")
    exit(4)
   }
   for keyDown in [true, false] {
-   guard let event = CGEvent(keyboardEventSource: eventSource, virtualKey: code, keyDown: keyDown) else { continue }
+   guard let event = CGEvent(keyboardEventSource: eventSource, virtualKey: code, keyDown: keyDown) else {
+    print("Could not create a key event (event source: \(eventSource == nil ? "none" : "ok")); stopping.")
+    exit(5)
+   }
    event.flags = shift ? .maskShift : []
    event.post(tap: .cghidEventTap)
   }
   keysSent += 1
   spin(pause)
+  if keysSent == 1 {
+   spin(0.5)
+   guard keyDownsReceived > 0 else {
+    print("macOS accepted the key presses but delivered none to this window; no check can run.")
+    exit(6)
+   }
+  }
  }
 }
 
@@ -156,16 +173,19 @@ let targets = [
 ]
 
 let telex: [(String, String, String)] = [
- ("sentence", "Hoom nay tooi caif Windows 11 vaf Chrome, rooif ddooir password cuar user admin. ",
+ ("sentence", "Hoom nay tooi caif Windows 11 vaf Chrome, rooif ddooir passsword cuar user admin. ",
   "Hôm nay tôi cài Windows 11 và Chrome, rồi đổi password của user admin. "),
- ("mixed", "Tieengs Vieetj raats giauf ddepj, more info is here, down town. ",
-  "Tiếng Việt rất giàu đẹp, more info is here, down town. "),
+ // English words whose marks cannot be Vietnamese come back as typed;
+ // ones that look like Vietnamese syllables convert (more → moẻ).
+ ("mixed", "Tieengs Vieetj raats giauf ddepj, windows user software google, more. ",
+  "Tiếng Việt rất giàu đẹp, windows user software google, moẻ. "),
  ("names", "Nguyeenx Vawn Huwng owr Thuaanj Thanhf, Bawcs Ninh. ", "Nguyễn Văn Hưng ở Thuận Thành, Bắc Ninh. "),
  ("backspace one character", "tieengs<g vieejt<t ", "tiếng việt "),
  ("backspace through word", "ab dduwowngf<<<<<<<cd", "acd"),
  ("backspace then retype", "nguowif<<<oi ", "ngoi "),
  ("escape", "tooi^ ", "tooi "),
- ("double key", "tesst pass off error ", "test pass off error "),
+ ("double key", "tesst passs offf errror ", "test pass off error "),
+ ("brackets", "arr[i] [tieengs vieetj] ", "ar[i] [tiếng việt] "),
  ("chat", "ddc roofi, camr own nhes, ddiiii ", "đc rồi, cảm ơn nhé, điiii "),
  ("uppercase", "VIEETJ NAM, DDAOF TAOJ ", "VIỆT NAM, ĐÀO TẠO "),
  ("newline", "xin chaof\ncacs banj ", "xin chào\ncác bạn "),
@@ -182,7 +202,7 @@ if let keys = ProcessInfo.processInfo.environment["LIVE_KEYS"] {
  window.makeFirstResponder(textView)
  type(keys, pause: 0.05)
  spin(0.3)
- print("typed \(keys) → \(textView.string)")
+ print("typed \(keys) → \(textView.string) (\(keyDownsReceived) key presses received)")
  exit(0)
 }
 let only = ProcessInfo.processInfo.environment["LIVE_ONLY"]
@@ -199,6 +219,17 @@ for target in targets where only == nil || target.name == only {
    spin(0.2)
    check("\(target.name) / \(mode) / \(label)", target.text(), expected)
   }
+ }
+ // Fast typing: keys 5 ms apart, faster than anyone types, so a client that
+ // reports its caret late is caught out.
+ for (mode, cases) in [("telex", telex), ("vni", vni)] {
+  setMode(mode)
+  let (_, keys, expected) = cases[0]
+  target.clear()
+  spin(0.1)
+  type(keys, pause: 0.005)
+  spin(0.5)
+  check("\(target.name) / \(mode) / fast sentence", target.text(), expected)
  }
 }
 

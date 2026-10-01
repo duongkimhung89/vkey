@@ -123,9 +123,19 @@ final class InputSession {
         return true
     }
 
+    /// End the active word as a space would, in the same text field
+    /// (switching language or Telex/VNI): a word that cannot be Vietnamese
+    /// returns to the keys typed.  Only done while the caret is still at the
+    /// word; otherwise the text is left as it is.
+    func finishWord(client: TextClient) {
+        let selection = client.selectedRange()
+        synchronize(with: selection)
+        finish(with: composer.committedText, client: client, selection: selection)
+    }
+
     /// End the active word where no key is being handled (focus change, mouse
-    /// click, mode switch).  The caret may no longer be at the word, so direct
-    /// text is left exactly as it is.
+    /// click).  The caret may no longer be at the word, so direct text is left
+    /// exactly as it is.
     func commit(client: TextClient) {
         if markedActive {
             client.insertText(composer.committedText, replacementRange: Self.noRange)
@@ -145,11 +155,10 @@ final class InputSession {
     private func composingCharacter(for key: KeyStroke) -> Character? {
         guard let input = key.characters, input.count == 1, let c = input.first, c.isASCII else { return nil }
         if c.isLetter { return c }
-        switch mode {
-        case .telex: return "[]".contains(c) ? c : nil
+        // Telex words are letters only: "[" and "]" stay brackets (arr[0],
+        // [link]) rather than shortcuts for ơ and ư, which uw and ow already type.
         // Keypad digits are numbers, not tone keys.
-        case .vni: return c.isNumber && !key.isNumericPad ? c : nil
-        }
+        return mode == .vni && c.isNumber && !key.isNumericPad ? c : nil
     }
 
     /// Backspace removes one character of the active word.

@@ -40,7 +40,7 @@ let corpus = try! JSONDecoder().decode([[String]].self, from: Data(contentsOf: c
 for pair in corpus {
  var word = "", actual = ""
  for c in pair[0] {
-  if c.isASCII && (c.isLetter || c.isNumber || "[]".contains(c)) { word.append(c) }
+  if c.isASCII && (c.isLetter || c.isNumber) { word.append(c) }
   else { actual += Composer.convert(word, mode: .telex) + String(c); word = "" }
  }
  actual += Composer.convert(word, mode: .telex)
@@ -212,6 +212,12 @@ for word in try! String(contentsOfFile: "Tests/vietnamese-syllables.txt", encodi
  if !wrong.isEmpty { missed.append("\(word): \(wrong.joined(separator: " "))") }
 }
 print("Dictionary syllables: \(syllables - missed.count)/\(syllables) typeable all four ways")
+// The rest are loan-word onsets (crô, blô), transliterations and misspellings
+// in the dictionary itself.  Fewer typeable syllables than this is a regression.
+let typeableSyllablesBaseline = 7672
+if syllables - missed.count < typeableSyllablesBaseline {
+ print("FAIL dictionary coverage fell below \(typeableSyllablesBaseline)"); failures += 1
+}
 if CommandLine.arguments.contains("--verbose") { for entry in missed { print("  ", entry) } }
 
 // MARK: - Syllable check
@@ -366,6 +372,8 @@ for (label, configure) in [
 }
 expect(run(.vni, "a#1 a1").text, "a1 á", "keypad digits are not tone keys")
 expect(run(.telex, "vieetj1 a2").text, "việt1 a2", "digits end a Telex word")
+// Brackets are punctuation in Telex: they end the word and never delete it.
+expect(run(.telex, "[[ h[[ arr[i] a[1] [tieengs vieetj](link) ").text, "[[ h[[ ar[i] a[1] [tiếng việt](link) ", "brackets in Telex")
 expect(run(.telex, "microo windows ") { _, session in session.checksSpelling = false }.text, "micrô ưindớ ", "spelling off in session")
 
 // Plain letters are typed by the application itself; VKey writes only when a
@@ -481,6 +489,24 @@ do {
  type("of tooi", into: client, with: session)
  expect(client.text, "xin chào tôi", "caret reported one key late")
  if session.prefersMarkedText { print("FAIL a late caret must not switch the client to marked text"); failures += 1 }
+}
+// Switching language or Telex/VNI ends the word as a space does, but only
+// while the caret is still at it.
+do {
+ for marked in [false, true] {
+  let client = FakeClient(), session = InputSession()
+  session.prefersMarkedText = marked
+  type("tooi windows", into: client, with: session)
+  session.finishWord(client: client)
+  expect(client.text, "tôi windows", "finish word on switching, marked: \(marked)")
+  type(" ab", into: client, with: session)
+  expect(client.text, "tôi windows ab", "typing after switching, marked: \(marked)")
+ }
+ let client = FakeClient(), session = InputSession()
+ type("tooi windows", into: client, with: session)
+ client.click(at: 0)
+ session.finishWord(client: client)
+ expect(client.text, "tôi ưindows", "no restore once the caret has moved")
 }
 // Losing focus with marked text commits it; with direct text nothing is sent.
 do {

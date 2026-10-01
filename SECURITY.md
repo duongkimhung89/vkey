@@ -1,4 +1,4 @@
-# VKey 0.3.3 — Security and privacy
+# VKey 0.3.4 — Security and privacy
 
 Network: Does this app access the Internet? **NO application network features or requests.**
 Keystroke storage: Does this app save keystrokes? **NO persistent storage.**
