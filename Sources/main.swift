@@ -329,13 +329,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         _ = launched.wait(timeout: .now() + 5)
     }
 
-    private func showAlert(_ title: String, _ text: String, style: NSAlert.Style = .informational) {
+    @discardableResult
+    private func showAlert(_ title: String, _ text: String, style: NSAlert.Style = .informational,
+                           details: InfoText? = nil, buttons: [String] = ["Đã hiểu"]) -> NSApplication.ModalResponse {
         let alert = NSAlert()
         alert.alertStyle = style
         alert.messageText = title
         alert.informativeText = text
-        alert.addButton(withTitle: "Đã hiểu")
-        alert.runModal()
+        alert.accessoryView = details?.view()
+        buttons.forEach { alert.addButton(withTitle: $0) }
+        NSApp.activate(ignoringOtherApps: true)
+        return alert.runModal()
     }
 
     // MARK: - Status item
@@ -377,21 +381,43 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             item("Tạm dừng: \(secureInputOwner ?? "một ứng dụng") đang bật Secure Input", nil)
             menu.addItem(.separator())
         }
-        item("Tiếng Việt", #selector(vietnamese), checked: preferences.enabled)
+        menu.addItem(language("Tiếng Việt", #selector(vietnamese), checked: preferences.enabled, shortcut: "⌃⇧"))
         item("English", #selector(english), checked: !preferences.enabled)
-        item("Control + Shift: đổi Việt/Anh", nil)
         menu.addItem(.separator())
+        if #available(macOS 14, *) {
+            menu.addItem(.sectionHeader(title: "Kiểu gõ"))
+        } else {
+            item("Kiểu gõ", nil)
+        }
         item("Telex", #selector(telex), checked: preferences.mode == .telex)
         item("VNI", #selector(vni), checked: preferences.mode == .vni)
-        menu.addItem(.separator())
         if preferences.markedTextApplicationCount > 0 {
+            menu.addItem(.separator())
             item("Thử lại gõ không gạch chân ở \(preferences.markedTextApplicationCount) ứng dụng", #selector(forgetMarkedText))
         }
         menu.addItem(.separator())
-        item("Hướng dẫn", #selector(guide))
-        item("Giới thiệu VKey \(shortVersion)", #selector(about))
-        item("Gỡ cài đặt VKey", #selector(uninstall))
-        item("Thoát", #selector(quit))
+        item("Hướng dẫn gõ…", #selector(guide))
+        item("Giới thiệu VKey…", #selector(about))
+        menu.addItem(.separator())
+        item("Gỡ cài đặt VKey…", #selector(uninstall))
+        item("Thoát VKey", #selector(quit))
+    }
+
+    /// A menu item with a modifier-only shortcut shown in the key-equivalent
+    /// column; NSMenuItem cannot display one as a real key equivalent.
+    private func language(_ title: String, _ action: Selector, checked: Bool, shortcut: String) -> NSMenuItem {
+        let entry = NSMenuItem(title: title, action: action, keyEquivalent: "")
+        entry.target = self
+        entry.state = checked ? .on : .off
+        let style = NSMutableParagraphStyle()
+        style.tabStops = [NSTextTab(textAlignment: .right, location: 150)]
+        let font = NSFont.menuFont(ofSize: 0)
+        let attributed = NSMutableAttributedString(string: title, attributes: [.font: font, .paragraphStyle: style])
+        attributed.append(NSAttributedString(string: "\t" + shortcut, attributes: [
+            .font: font, .foregroundColor: NSColor.tertiaryLabelColor, .paragraphStyle: style,
+        ]))
+        entry.attributedTitle = attributed
+        return entry
     }
     @objc private func vietnamese() {
         Preferences.shared.enabled = true
@@ -494,12 +520,41 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     @objc private func guide() {
-        showAlert("Hướng dẫn gõ",
-                  "Chọn VKey trong menu nguồn nhập của macOS. Nút VI/EN trên thanh menu đổi Tiếng Việt/English và Telex/VNI; Control + Shift đổi nhanh Việt/Anh.\n\nTelex: tieengs Vieetj → tiếng Việt, dduwowngf → đường.\nVNI: tie6ng1 Vie6t5 → tiếng Việt, d9uo7ng2 → đường.\n\nBackspace xoá một ký tự của từ đang gõ. Escape trả lại các phím đã gõ.\n\nKhi kết thúc từ, nếu dấu rơi vào chỗ tiếng Việt không có (windows, user, software…) VKey trả lại đúng các phím đã gõ. Từ tiếng Anh có dạng âm tiết tiếng Việt (test → tét, is → í) thì chuyển sang English hoặc gõ lặp phím dấu để huỷ dấu (tesst → test, passs → pass).\n\nCài đặt: kéo VKey.app vào Applications rồi mở một lần. Lần đầu cần đăng xuất rồi đăng nhập lại, sau đó thêm VKey trong Cài đặt hệ thống → Bàn phím → Nhập văn bản → Sửa → + → Tiếng Việt. Khi cập nhật chỉ cần mở bản mới một lần.")
+        let details = InfoText()
+        details.heading("Bật và chuyển")
+        details.row("VI / EN", "Bấm trên thanh menu để chọn Tiếng Việt/English và Telex/VNI.")
+        details.row("⌃ ⇧", "Control + Shift đổi nhanh Việt/Anh.")
+        details.heading("Cách gõ")
+        details.row("Telex", "`tieengs Vieetj` → tiếng Việt\n`dduwowngf` → đường")
+        details.row("VNI", "`tie6ng1 Vie6t5` → tiếng Việt\n`d9uo7ng2` → đường")
+        details.heading("Phím sửa")
+        details.row("⌫", "Xoá một ký tự của từ đang gõ.")
+        details.row("esc", "Trả lại đúng các phím đã gõ.")
+        details.heading("Gõ lẫn tiếng Anh")
+        details.paragraph("Từ không thể là tiếng Việt (`windows`, `user`, `software`) được giữ nguyên khi kết thúc từ.")
+        details.paragraph("Từ giống âm tiết Việt (`test` → tét): gõ lặp phím dấu (`tesst` → test) hoặc chuyển sang EN.")
+        details.heading("Cài đặt")
+        details.row("1", "Kéo VKey.app vào Applications rồi mở một lần.")
+        details.row("2", "Đăng xuất rồi đăng nhập lại (chỉ lần đầu).")
+        details.row("3", "Cài đặt hệ thống → Bàn phím → Nhập văn bản → Sửa → + → Tiếng Việt → VKey.")
+        details.paragraph("Khi cập nhật, chỉ cần mở bản mới một lần.", secondary: true)
+        showAlert("Hướng dẫn gõ", "Chọn VKey trong menu nguồn nhập của macOS rồi gõ như bình thường.", details: details)
     }
     @objc private func about() {
-        showAlert("VKey \(version)",
-                  "Bộ gõ tiếng Việt offline cho macOS.\nTelex và VNI • Unicode\n\nKhông kết nối mạng, không lưu nội dung gõ. Không cần quyền Accessibility hoặc Input Monitoring.\n\nhttps://github.com/duongkimhung89/vkey\n\nThông tin nguồn mở, bản quyền và license nằm trong Resources/THIRD_PARTY.md và Resources/Licenses/.")
+        let details = InfoText()
+        details.heading("Riêng tư và tối giản")
+        details.row("Offline", "Không kết nối mạng, không gửi dữ liệu đi đâu.")
+        details.row("Riêng tư", "Không lưu, không ghi lại nội dung bạn gõ.")
+        details.row("Gọn nhẹ", "Không cần quyền Accessibility hay Input Monitoring.")
+        details.row("Kiểu gõ", "Telex, VNI · Unicode")
+        details.link("github.com/duongkimhung89/vkey", URL(string: "https://github.com/duongkimhung89/vkey")!)
+        details.paragraph("Mã nguồn mở theo GPL-3.0.", secondary: true)
+        let response = showAlert("VKey", "Bộ gõ tiếng Việt cho macOS\nPhiên bản \(version)",
+                                 details: details, buttons: ["Đã hiểu", "Giấy phép…"])
+        if response == .alertSecondButtonReturn,
+           let notices = Bundle.main.url(forResource: "THIRD_PARTY", withExtension: "md") {
+            NSWorkspace.shared.activateFileViewerSelecting([notices])
+        }
     }
 }
 let app = NSApplication.shared

@@ -40,3 +40,6 @@ reports/signing.txt
 reports/xkey-api-inventory.txt
 reports/undefined-symbols.txt
 reports/dmg-verification.txt
+
+# Landing page (local only)
+website/

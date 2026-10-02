@@ -47,12 +47,12 @@ func iconImage(size: Int) -> CGImage {
     let outer = CGRect(x: unit * 0.06, y: unit * 0.06, width: unit * 0.88, height: unit * 0.88)
     let radius = unit * 0.22
 
-    context.setFillColor(color(0.07, 0.09, 0.13))
+    context.setFillColor(color(0.0, 0.25, 0.62))
     context.addPath(CGPath(roundedRect: outer, cornerWidth: radius, cornerHeight: radius, transform: nil))
     context.fillPath()
 
     let inner = outer.insetBy(dx: unit * 0.025, dy: unit * 0.025)
-    context.setFillColor(color(0.12, 0.25, 0.38))
+    context.setFillColor(color(0.04, 0.42, 1.0))
     context.addPath(CGPath(roundedRect: inner, cornerWidth: radius * 0.9, cornerHeight: radius * 0.9, transform: nil))
     context.fillPath()
 
