@@ -4,7 +4,9 @@ Bộ gõ tiếng Việt native cho macOS, Telex/VNI, Unicode, hoàn toàn offlin
 Cho Apple Silicon, macOS 13 trở lên; mới build/chạy trên macOS 27.0.1.
 Bản công khai mới nhất là 0.3.7, có DMG trên GitHub Releases và cài được qua Homebrew (`brew install --cask duongkimhung89/vkey/vkey`).
 
-Bản 0.3.8 (build 18) đang thử nghiệm cục bộ, chưa phát hành lên GitHub hoặc Homebrew. Bản này dùng chung các bảng ngôn ngữ bất biến, tái sử dụng vùng kết quả của engine qua các phím và bỏ bước chuẩn hóa Unicode dư; quy tắc chuyển dấu và cơ chế xử lý con trỏ giữ nguyên. DMG dùng thử được tạo tại `dist/VKey-0.3.8-arm64.dmg`.
+Bản 0.3.9 (build 19) đang thử nghiệm cục bộ, chưa phát hành: xoá lùi về sát một từ đã gõ rồi gõ tiếp thì vẫn sửa được dấu của từ đó.
+
+Bản 0.3.8 (build 18) cũng chỉ thử nghiệm cục bộ, chưa phát hành lên GitHub hoặc Homebrew. Bản này dùng chung các bảng ngôn ngữ bất biến, tái sử dụng vùng kết quả của engine qua các phím và bỏ bước chuẩn hóa Unicode dư; quy tắc chuyển dấu và cơ chế xử lý con trỏ giữ nguyên. DMG dùng thử được tạo tại `dist/VKey-0.3.8-arm64.dmg`.
 
 ## Cài từ DMG
 
@@ -29,7 +31,7 @@ Bản 0.3.7 đã ký bằng Developer ID Application, bật hardened runtime và
 | Duowng | Duo7ng | Dương |
 | Huwng | Hu7ng | Hưng |
 
-Backspace xoá một ký tự của từ đang gõ (`tiếng` → `tiến`) và gõ tiếp được trên phần còn lại. Escape trả lại các phím đã gõ; khi không có gì để trả lại, Escape thuộc về ứng dụng. Space/Enter/Tab/dấu câu kết thúc từ; trong Telex, `[` và `]` cũng là dấu câu (không phải phím tắt cho `ơ`, `ư`). Đổi Việt/Anh hay Telex/VNI giữa chừng kết thúc từ giống như gõ Space. Cmd/Ctrl/Option và phím di chuyển được chuyển cho ứng dụng sau khi kết thúc từ. Không sửa dấu từ đã kết thúc.
+Backspace xoá một ký tự của từ đang gõ (`tiếng` → `tiến`) và gõ tiếp được trên phần còn lại. Escape trả lại các phím đã gõ; khi không có gì để trả lại, Escape thuộc về ứng dụng. Space/Enter/Tab/dấu câu kết thúc từ; trong Telex, `[` và `]` cũng là dấu câu (không phải phím tắt cho `ơ`, `ư`). Đổi Việt/Anh hay Telex/VNI giữa chừng kết thúc từ giống như gõ Space. Cmd/Ctrl/Option và phím di chuyển được chuyển cho ứng dụng sau khi kết thúc từ. Xoá lùi về sát một từ đã kết thúc (`duong ` ⌫) rồi gõ tiếp thì phím vẫn sửa được từ đó (`duong ` ⌫ `972` → `đường`); click chuột hay di chuyển con trỏ tới từ cũ thì không.
 
 ### Gõ xen tiếng Anh
 

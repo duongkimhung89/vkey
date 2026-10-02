@@ -76,6 +76,17 @@ final class InputSession {
     /// letters right before the caret may be the start of the word in
     /// progress.
     private var mayFollowUnseenKeys = false
+    /// The last key VKey handled was Backspace.  A word started right after
+    /// one may be the end of a word typed earlier (`duong ` ⌫ then `9`).
+    private var lastKeyWasBackspace = false
+
+    /// Where a word that starts at the caret may really have started.
+    private enum EarlierStart {
+        /// Keys the application typed by itself before VKey was active.
+        case unseenKeys
+        /// A word typed earlier that Backspace has led back to.
+        case revisitedWord
+    }
 
     /// Returns true when the key was consumed.
     func handle(_ key: KeyStroke, client: TextClient) -> Bool {
@@ -83,6 +94,8 @@ final class InputSession {
         synchronize(with: selection, client: client)
         let followsUnseenKeys = mayFollowUnseenKeys
         mayFollowUnseenKeys = false
+        let followsBackspace = lastKeyWasBackspace
+        lastKeyWasBackspace = key.keyCode == KeyStroke.backspace
 
         if key.hasShortcutModifier {
             finish(with: composer.committedText, client: client, selection: selection)
@@ -114,9 +127,16 @@ final class InputSession {
             if markedActive {
                 trail = []
             } else {
+                // A trail means VKey's own edits brought the caret here, so
+                // the text before it is current (not a rebuilt field's old text).
+                let caretWasTracked = !trail.isEmpty
                 start = trail.last ?? selection.location
                 if trail.isEmpty { trail = [start] }
-                if followsUnseenKeys { adoptWordBeforeCaret(client: client, selection: selection) }
+                if followsUnseenKeys {
+                    continueWord(from: .unseenKeys, client: client, selection: selection)
+                } else if followsBackspace, caretWasTracked {
+                    continueWord(from: .revisitedWord, client: client, selection: selection)
+                }
             }
         }
         composer.append(character)
@@ -181,32 +201,44 @@ final class InputSession {
         mayFollowUnseenKeys = false
     }
 
-    /// Take the word the application typed by itself before VKey was active
-    /// as the start of the word in progress: the keys that make it up, right
-    /// before the caret and after a word boundary.  Only plain keys qualify,
-    /// as that is all an application types without an input method.
-    private func adoptWordBeforeCaret(client: TextClient, selection: NSRange) {
-        guard selection.location != NSNotFound, selection.length == 0, start == selection.location, start > 0 else { return }
-        let window = min(start, Composer.maximumRawLength)
-        guard let text = client.text(in: NSRange(location: start - window, length: window)),
-              text.utf16.count == window else { return }
-        let before = Array(text)
-        var first = before.count
-        while first > 0, composingCharacter(for: KeyStroke(keyCode: 0, characters: String(before[first - 1]))) != nil {
-            first -= 1
+    /// Take the word right before the caret as the start of the word in
+    /// progress, so the key being typed can still change it.
+    private func continueWord(from earlierStart: EarlierStart, client: TextClient, selection: NSRange) {
+        guard let word = wordBeforeCaret(client: client, selection: selection) else { return }
+        switch earlierStart {
+        case .unseenKeys:
+            // Only plain keys qualify, as that is all an application types
+            // without an input method.  They are the keys, exactly as typed.
+            guard word.allSatisfy({ composingCharacter(for: KeyStroke(keyCode: 0, characters: String($0))) != nil }) else { return }
+            for c in word { composer.append(c) }
+        case .revisitedWord:
+            // Type the word again; only keys that give back exactly the text
+            // shown qualify (not "windows", which VKey left as typed).
+            guard let keys = Composer.keys(for: word, mode: mode),
+                  keys.count < Composer.maximumRawLength else { return }
+            for c in keys { composer.append(c) }
+            guard composer.text == word else {
+                composer.reset()
+                return
+            }
         }
-        guard first < before.count else { return }
-        // The word must start in what was read, after something that is not
-        // part of a word (a Vietnamese letter typed earlier is).
-        if first > 0 {
-            guard !before[first - 1].isLetter, !before[first - 1].isNumber else { return }
-        } else {
-            guard window == start else { return }
-        }
-        let word = String(before[first...])
-        for c in word { composer.append(c) }
         start -= word.utf16.count
         written = word
+    }
+
+    /// The letters (and digits) that end at the caret, when they start after
+    /// a word boundary within reach.  Read only from a caret the client
+    /// reports where VKey's record has it.
+    private func wordBeforeCaret(client: TextClient, selection: NSRange) -> String? {
+        guard selection.location != NSNotFound, selection.length == 0, start == selection.location, start > 0 else { return nil }
+        let window = min(start, Composer.maximumRawLength)
+        guard let text = client.text(in: NSRange(location: start - window, length: window)),
+              text.utf16.count == window else { return nil }
+        let word = String(text.reversed().prefix { $0.isLetter || $0.isNumber }.reversed())
+        // The word must start in what was read: either something that is not
+        // part of a word comes before it, or the document starts there.
+        guard !word.isEmpty, word.utf16.count < window || window == start else { return nil }
+        return word
     }
 
     private func composingCharacter(for key: KeyStroke) -> Character? {

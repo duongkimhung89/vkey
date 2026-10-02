@@ -12,7 +12,7 @@ Build date: 2026-10-02.
 - Disk image: `./scripts/package.sh`
 
 Output app: `dist/VKey.app`
-Output DMG: `dist/VKey-0.3.8-arm64.dmg` (local trial, not published)
+Output DMG: `dist/VKey-0.3.8-arm64.dmg` (local trial, not published); 0.3.9 has no DMG yet
 
 The compiler succeeds without source warnings. Build 18 is signed with the available Developer ID Application identity using hardened runtime and a secure timestamp; `codesign --verify --deep --strict` passes. Apple Notary Service accepted the DMG, its ticket was stapled and validated, and `spctl --assess` reports `accepted` with source `Notarized Developer ID`. There is no app sandbox or entitlement file. No system security controls were disabled. Build shell scripts are development-only; app runtime launches no subprocesses.
 
@@ -47,6 +47,12 @@ Corrected bundle identifier to `local.inputmethod.VKey` and the matching IMK con
 Replaced the handcrafted Composer algorithm with a bounded adapter to the offline Vietnamese conversion engine. The InputMethodKit transport now uses direct replacement for the active word, avoiding marked-text decoration. VKey keeps a separate `VK` status-menu for language and Telex/VNI commands; the macOS input-source menu only selects `ABC` or `VKey`. Preferences remain in the old domain. The corresponding source, tests, build scripts and notices are kept in the repository; the DMG contains the app, a short install guide and an `Applications` shortcut. The app performs the per-user Input Methods copy/register step on its first launch from Applications.
 
 Observed startup limitation: after terminating/replacing the app, Chrome initially passed several synthetic test keys through before the new input session became active. Repeating the sentence after activation succeeded completely; warm ABC/VKey switching also passed. Cold-start readiness is not claimed fully fixed. Do not interpret an installed or selected source alone as successful typing verification.
+
+## 0.3.9 (build 19) — local trial
+
+Backspace back into a finished word: deleting the space or punctuation after a word and typing on continues that word (`duong ` ⌫ `972` → `đường`), in Telex and VNI. The word is read back from the document and turned into keys again, only when the caret is where VKey's own edits put it and those keys give back exactly the text shown. No history of finished words is kept. The activation and rebuilt-field (Zalo) rules of 0.3.7 are unchanged. See `reports/COMPOSITION-STYLE.md`.
+
+`./scripts/test.sh` passes with 0 failures, including 1,436 new cases over the test vocabulary. Installed on the build Mac with `./scripts/dev-install.sh` for live testing; not packaged, notarized, pushed or published.
 
 ## 0.3.8 (build 18) — local trial
 

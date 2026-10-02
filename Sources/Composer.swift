@@ -121,3 +121,73 @@ struct Composer {
         return composer.text
     }
 }
+
+// MARK: - Keys for a word
+
+extension Composer {
+    /// The keys that type `word` in `mode`, the reverse of `convert`: each
+    /// letter is followed by the key for its mark (â: a6 / aa, đ: d9 / dd),
+    /// and the tone key comes after the last letter, or right after its vowel
+    /// when `toneAtEnd` is false.  Nil when the word holds a character that
+    /// no keys type.
+    static func keys(for word: String, mode: TypingMode, toneAtEnd: Bool = true) -> String? {
+        // In a word written in capitals the mark and tone keys are capitals too (NGUYEENX).
+        let allCaps = word.count > 1 && word == word.uppercased()
+        func cased(_ key: Character) -> String { allCaps ? key.uppercased() : String(key) }
+
+        var keys = "", toneKey = ""
+        for character in word {
+            guard let parts = letterParts[character.lowercased()] else {
+                guard character.isASCII, character.isLetter else { return nil }
+                keys.append(character)
+                continue
+            }
+            keys += character.isUppercase ? parts.plain.uppercased() : String(parts.plain)
+            if let mark = parts.mark {
+                keys += cased(mark.key(for: parts.plain, in: mode))
+            }
+            if parts.tone > 0 {
+                let key = cased(Array(mode == .telex ? "sfrxj" : "12345")[parts.tone - 1])
+                if toneAtEnd { toneKey = key } else { keys += key }
+            }
+        }
+        return keys + toneKey
+    }
+
+    /// What turns a plain letter into a Vietnamese one.
+    private enum Mark {
+        case circumflex // â ê ô
+        case breve      // ă
+        case horn       // ơ ư
+        case stroke     // đ
+
+        func key(for letter: Character, in mode: TypingMode) -> Character {
+            switch (mode, self) {
+            case (.telex, .circumflex), (.telex, .stroke): return letter
+            case (.telex, .breve), (.telex, .horn): return "w"
+            case (.vni, .circumflex): return "6"
+            case (.vni, .breve): return "8"
+            case (.vni, .horn): return "7"
+            case (.vni, .stroke): return "9"
+            }
+        }
+    }
+
+    /// Every lowercase vowel and đ → its plain letter, mark and tone
+    /// (1...5: sắc, huyền, hỏi, ngã, nặng, the order of the VNI keys).
+    private static let letterParts: [String: (plain: Character, mark: Mark?, tone: Int)] = {
+        let rows: [(plain: Character, mark: Mark?, forms: String)] = [
+            ("a", nil, "aáàảãạ"), ("a", .breve, "ăắằẳẵặ"), ("a", .circumflex, "âấầẩẫậ"),
+            ("e", nil, "eéèẻẽẹ"), ("e", .circumflex, "êếềểễệ"), ("i", nil, "iíìỉĩị"),
+            ("o", nil, "oóòỏõọ"), ("o", .circumflex, "ôốồổỗộ"), ("o", .horn, "ơớờởỡợ"),
+            ("u", nil, "uúùủũụ"), ("u", .horn, "ưứừửữự"), ("y", nil, "yýỳỷỹỵ"),
+        ]
+        var parts: [String: (plain: Character, mark: Mark?, tone: Int)] = ["đ": ("d", .stroke, 0)]
+        for row in rows {
+            for (tone, form) in row.forms.enumerated() {
+                parts[String(form)] = (row.plain, row.mark, tone)
+            }
+        }
+        return parts
+    }()
+}

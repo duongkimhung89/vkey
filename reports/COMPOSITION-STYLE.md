@@ -41,3 +41,9 @@ Two rules now apply, to every client:
 
 A simulated field that reports the previous message's caret and text until the next key lands, after six different sent messages, gives 984 cases over the test vocabulary in Telex and VNI: 0.3.6 failed 457, the timing rule alone 425, the relocation alone 347, both 0. With the diagnostic build in Zalo, ten `o2`/`d9` messages after Return were all relocated and converted; one failure, the first key 2.6 s after switching back to Zalo, led to the timing rule. Remaining exposure: switching to such an application and typing within 0.3 s, when the message last sent ends in unaccented letters.
 
+
+## Backspace back into a word
+
+Deleting the space after a word (or punctuation typed after it) and typing on started a new word, so `duong ` ⌫ `9` came out as `duong9`. The first key after a Backspace now continues the word right before the caret, under the same safeguards as the activation case: the caret must be where VKey's own record of its edits puts it (so a rebuilt field's old text never qualifies, nor does text after a click), the client must report that caret, and the word must start after a word boundary. The word is read from the document, turned back into keys (`Composer.keys(for:mode:)`), and taken only when those keys give back exactly the text shown; a word VKey left as typed (`windows`) or written in another tone style starts a new word as before. No history of finished words is kept.
+
+Over the test vocabulary, every word typed up to its last key, then a space, Backspace and the last key, gives the same text as typing it straight through: 1436 cases in Telex and VNI. A late caret skips the takeover rather than guess.

@@ -135,41 +135,9 @@ let toneRows: [(letter: Character, mark: Int, forms: String)] = [
  ("a",0,"aáàảãạ"),("a",2,"ăắằẳẵặ"),("a",1,"âấầẩẫậ"),("e",0,"eéèẻẽẹ"),("e",1,"êếềểễệ"),("i",0,"iíìỉĩị"),
  ("o",0,"oóòỏõọ"),("o",1,"ôốồổỗộ"),("o",3,"ơớờởỡợ"),("u",0,"uúùủũụ"),("u",3,"ưứừửữự"),("y",0,"yýỳỷỹỵ"),
 ]
+/// Vowels and đ → plain letter, mark (1 circumflex, 2 breve, 3 horn, 4 đ) and tone.
 var decomposition: [Character: (letter: Character, mark: Int, tone: Int)] = ["đ": ("d", 4, 0)]
 for row in toneRows { for (tone, form) in row.forms.enumerated() { decomposition[form] = (row.letter, row.mark, tone) } }
-
-/// Keys for a Vietnamese word. mark: 1 circumflex, 2 breve, 3 horn, 4 đ.
-func keys(for word: String, mode: TypingMode, toneAtEnd: Bool) -> String? {
- let allCaps = word.count > 1 && word == word.uppercased()
- var result = "", pending = ""
- for character in word {
-  let lower = Character(character.lowercased())
-  guard let part = decomposition[lower] else {
-   guard character.isASCII, character.isLetter else { return nil }
-   result.append(character); continue
-  }
-  let upper = character.isUppercase
-  result += upper ? part.letter.uppercased() : String(part.letter)
-  var extra = ""
-  switch (mode, part.mark) {
-  case (_, 0): break
-  case (.telex, 1), (.telex, 4): extra = String(part.letter)
-  case (.telex, _): extra = "w"
-  case (.vni, 1): extra = "6"
-  case (.vni, 2): extra = "8"
-  case (.vni, 3): extra = "7"
-  default: extra = "9"
-  }
-  result += allCaps ? extra.uppercased() : extra
-  if part.tone > 0 {
-   let index = "sfrxj".index("sfrxj".startIndex, offsetBy: part.tone - 1)
-   let key = mode == .telex ? String("sfrxj"[index]) : String(part.tone)
-   let cased = allCaps ? key.uppercased() : key
-   if toneAtEnd { pending = cased } else { result += cased }
-  }
- }
- return result + pending
-}
 
 // Every Vietnamese vowel/tone, including uppercase, must reach the client
 // in precomposed form even without a normalization pass in Composer.
@@ -177,7 +145,7 @@ for row in toneRows {
  for letter in row.forms {
   for word in [String(letter), letter.uppercased()] {
    for mode in [TypingMode.telex, .vni] {
-    let raw = keys(for: word, mode: mode, toneAtEnd: true)!
+    let raw = Composer.keys(for: word, mode: mode, toneAtEnd: true)!
     expect(committed(raw, mode), word, "vowel \(mode) \(raw)")
    }
   }
@@ -206,7 +174,7 @@ var typedWords = 0
 for word in Set(vietnameseTokens).sorted() {
  for mode in [TypingMode.telex, .vni] {
   for toneAtEnd in [true, false] {
-   guard let raw = keys(for: word, mode: mode, toneAtEnd: toneAtEnd) else { continue }
+   guard let raw = Composer.keys(for: word, mode: mode, toneAtEnd: toneAtEnd) else { continue }
    let actual = committed(raw, mode)
    typedWords += 1
    if toneless(actual) != toneless(word) {
@@ -228,7 +196,7 @@ for word in try! String(contentsOfFile: "Tests/vietnamese-syllables.txt", encodi
  var wrong: [String] = [], typedAny = false
  for mode in [TypingMode.telex, .vni] {
   for toneAtEnd in [true, false] {
-   guard let raw = keys(for: word, mode: mode, toneAtEnd: toneAtEnd), raw.count <= Composer.maximumRawLength else { continue }
+   guard let raw = Composer.keys(for: word, mode: mode, toneAtEnd: toneAtEnd), raw.count <= Composer.maximumRawLength else { continue }
    typedAny = true
    let actual = committed(raw, mode)
    if toneless(actual) != toneless(word) { wrong.append("\(raw)→\(actual)") }
@@ -617,6 +585,57 @@ do {
  }
 }
 
+// Backspace back to a word typed earlier, then on with the word: its keys
+// still change it, exactly as if the word had never ended.  Only a word VKey
+// can type again exactly as shown is taken back.
+do {
+ var revisitCases = 0
+ for mode in [TypingMode.telex, .vni] {
+  for word in Set(vietnameseTokens).sorted() {
+   guard let keys = Composer.keys(for: word, mode: mode), keys.count > 1 else { continue }
+   let earlier = String(keys.dropLast())
+   // The earlier keys must leave their converted word (not the keys given
+   // back, as for "trâ"), and that word must be typed by those same keys.
+   let shown = committed(earlier, mode)
+   guard shown == Composer.convert(earlier, mode: mode), Composer.keys(for: shown, mode: mode) == earlier else { continue }
+   revisitCases += 1
+   expect(run(mode, earlier + " <" + String(keys.last!) + " ").text, run(mode, keys + " ").text,
+          "\(mode) \(word) finished after a space and Backspace")
+  }
+ }
+ print("Backspace back into a word: \(revisitCases) cases")
+
+ expect(run(.vni, "duongasd <<<<972 ").text, "đường ", "VNI: a typo deleted back into the word")
+ expect(run(.telex, "duongasd <<<<dwf ").text, "đường ", "Telex: a typo deleted back into the word")
+ expect(run(.vni, "duong, <<972 ").text, "đường ", "punctuation deleted back into the word")
+ expect(run(.vni, "d9u7o7n <g2 ").text, "đường ", "a word with marks taken back")
+ expect(run(.telex, "Dduwown <gf ").text, "Đường ", "a capitalised word with marks taken back")
+
+ // Everything else starts a new word, as before.
+ expect(run(.telex, "windows <s ").text, "windowss ", "a word left as typed is not taken back")
+ expect(run(.telex, "tieengs^s ").text, "tieengss ", "Escape's keys are not taken back")
+ expect(run(.vni, "duong <9 ") { _, session in session.prefersMarkedText = true }.text, "duong9 ",
+        "marked text does not take back a word")
+ expect(run(.vni, "duong <9 ") { client, _ in client.exposesText = false }.text, "duong9 ",
+        "a client that does not expose its text keeps the keys as typed")
+ do {
+  let client = FakeClient(), session = InputSession()
+  session.mode = .vni
+  type("duong <", into: client, with: session)
+  client.click(at: 5)
+  type("9 ", into: client, with: session)
+  expect(client.text, "duong9 ", "a click after Backspace: the caret is no longer VKey's to know")
+ }
+ do {
+  let client = FakeClient(), session = InputSession()
+  session.mode = .vni
+  type("duong", into: client, with: session)
+  client.click(at: 2)
+  type("<9 ", into: client, with: session)
+  expect(client.text, "d9 ong", "Backspace in the middle of a word does not take it back")
+ }
+}
+
 // A chat box rebuilt on sending (Zalo): the input method is activated again
 // for the same, still active application, and until the next key lands the
 // field reports the caret and text of the message just sent.  The new
@@ -713,7 +732,7 @@ do {
   (.vni, "tie6ng1<g Vie6t5<t d9uo7c5<<c to6i<<<<ta ")]
  for mode in [TypingMode.telex, .vni] {
   for toneAtEnd in [true, false] {
-   let words = vietnameseTokens.compactMap { keys(for: $0, mode: mode, toneAtEnd: toneAtEnd) }
+   let words = vietnameseTokens.compactMap { Composer.keys(for: $0, mode: mode, toneAtEnd: toneAtEnd) }
    sessions.append((mode, words.joined(separator: " ") + " "))
   }
  }
