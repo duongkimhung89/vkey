@@ -622,9 +622,10 @@ do {
   let client = FakeClient(), session = InputSession()
   session.mode = .vni
   type("duong <", into: client, with: session)
+  session.commit(client: client) // The click, as VKey receives it.
   client.click(at: 5)
-  type("9 ", into: client, with: session)
-  expect(client.text, "duong9 ", "a click after Backspace: the caret is no longer VKey's to know")
+  type("972 ", into: client, with: session)
+  expect(client.text, "duong972 ", "a click after Backspace: the caret is no longer VKey's to know")
  }
  do {
   let client = FakeClient(), session = InputSession()

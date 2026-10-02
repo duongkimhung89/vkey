@@ -2,15 +2,15 @@
 
 Bộ gõ tiếng Việt native cho macOS, Telex/VNI, Unicode, hoàn toàn offline.
 Cho Apple Silicon, macOS 13 trở lên; mới build/chạy trên macOS 27.0.1.
-Bản công khai mới nhất là 0.3.7, có DMG trên GitHub Releases và cài được qua Homebrew (`brew install --cask duongkimhung89/vkey/vkey`).
+Bản công khai mới nhất là 0.3.9, có DMG trên GitHub Releases và cài được qua Homebrew (`brew install --cask duongkimhung89/vkey/vkey`).
 
-Bản 0.3.9 (build 19) đang thử nghiệm cục bộ, chưa phát hành: xoá lùi về sát một từ đã gõ rồi gõ tiếp thì vẫn sửa được dấu của từ đó.
+Bản 0.3.9 (build 19) cho phép xoá lùi về sát một từ đã gõ rồi gõ tiếp để sửa dấu của từ đó, với cả Telex và VNI.
 
-Bản 0.3.8 (build 18) cũng chỉ thử nghiệm cục bộ, chưa phát hành lên GitHub hoặc Homebrew. Bản này dùng chung các bảng ngôn ngữ bất biến, tái sử dụng vùng kết quả của engine qua các phím và bỏ bước chuẩn hóa Unicode dư; quy tắc chuyển dấu và cơ chế xử lý con trỏ giữ nguyên. DMG dùng thử được tạo tại `dist/VKey-0.3.8-arm64.dmg`.
+Bản này cũng bao gồm các tối ưu của 0.3.8: dùng chung các bảng ngôn ngữ bất biến, tái sử dụng vùng kết quả của engine qua các phím và bỏ bước chuẩn hóa Unicode dư. Hướng dẫn và Giới thiệu được trình bày trong cửa sổ riêng, kèm biểu tượng ứng dụng cập nhật.
 
 ## Cài từ DMG
 
-1. Tải bản mới nhất [`VKey-0.3.7-arm64.dmg`](https://github.com/duongkimhung89/vkey/releases/latest) từ GitHub Releases rồi mở file DMG.
+1. Tải bản mới nhất [`VKey-0.3.9-arm64.dmg`](https://github.com/duongkimhung89/vkey/releases/latest) từ GitHub Releases rồi mở file DMG.
 2. Kéo **VKey.app** từ DMG vào **Applications**.
 3. Mở **VKey.app** một lần từ Applications. VKey sẽ tự copy và đăng ký phần input method ở vị trí macOS yêu cầu, rồi báo bước tiếp theo. Không cần tự mở `~/Library/Input Methods`.
 4. Đăng xuất tài khoản macOS rồi đăng nhập lại để macOS cập nhật danh sách nguồn nhập.
@@ -19,7 +19,7 @@ Bản 0.3.8 (build 18) cũng chỉ thử nghiệm cục bộ, chưa phát hành 
 
 Từ 0.3.0, cập nhật không cần đăng xuất: mở bản VKey.app mới một lần, nó tự thay bản trong `~/Library/Input Methods` và khởi động lại bộ gõ đang chạy. Khi build từ source, `./scripts/dev-install.sh` làm cả ba việc build, test, cài.
 
-Bản 0.3.7 đã ký bằng Developer ID Application, bật hardened runtime và được Apple notarize/staple; bản 0.3.0 chưa được notarize. Nếu macOS vẫn chặn trên một máy cụ thể, không tắt Gatekeeper/SIP hay xoá quarantine để vượt chặn; hãy kiểm tra lại checksum và trạng thái macOS.
+Bản 0.3.9 đã ký bằng Developer ID Application, bật hardened runtime và được Apple notarize/staple; bản 0.3.0 chưa được notarize. Nếu macOS vẫn chặn trên một máy cụ thể, không tắt Gatekeeper/SIP hay xoá quarantine để vượt chặn; hãy kiểm tra lại checksum và trạng thái macOS.
 
 ## Gõ thử
 
@@ -32,6 +32,8 @@ Bản 0.3.7 đã ký bằng Developer ID Application, bật hardened runtime và
 | Huwng | Hu7ng | Hưng |
 
 Backspace xoá một ký tự của từ đang gõ (`tiếng` → `tiến`) và gõ tiếp được trên phần còn lại. Escape trả lại các phím đã gõ; khi không có gì để trả lại, Escape thuộc về ứng dụng. Space/Enter/Tab/dấu câu kết thúc từ; trong Telex, `[` và `]` cũng là dấu câu (không phải phím tắt cho `ơ`, `ư`). Đổi Việt/Anh hay Telex/VNI giữa chừng kết thúc từ giống như gõ Space. Cmd/Ctrl/Option và phím di chuyển được chuyển cho ứng dụng sau khi kết thúc từ. Xoá lùi về sát một từ đã kết thúc (`duong ` ⌫) rồi gõ tiếp thì phím vẫn sửa được từ đó (`duong ` ⌫ `972` → `đường`); click chuột hay di chuyển con trỏ tới từ cũ thì không.
+
+Việc nhận lại từ sau Backspace cần ứng dụng báo đúng vị trí con trỏ và cho đọc văn bản; marked text không hỗ trợ thao tác này. Nếu con trỏ báo trễ, phím tiếp theo có thể bắt đầu từ mới. Một số từ không dựng lại được chính xác, như `huơ`, cũng chưa được nhận lại (`huow ` ⌫ `ng ` thành `huơng ` thay vì `hương `). Với từ được nhận lại, Escape và cơ chế trả phím khi sai cấu trúc dùng chuỗi phím dựng từ chữ đang hiển thị, có thể khác các phím ban đầu; nối thêm chữ làm từ không hợp lệ có thể trả cả từ cũ thành chuỗi phím đó.
 
 ### Gõ xen tiếng Anh
 
@@ -69,6 +71,7 @@ Giới hạn đã biết: ở ứng dụng không báo cú bấm chuột cho b�
 - Bộ từ tiếng Anh thông dụng (xem trên).
 - Gõ nhanh vào ô văn bản giả báo vị trí con trỏ chậm ngẫu nhiên 0–4 phím (cả đoạn văn 817 từ, bốn cách gõ, có Backspace): văn bản ra phải giống hệt ô không chậm.
 - Mô phỏng phiên gõ trên ô văn bản giả: câu xen Anh–Việt, Backspace, Escape, phím tắt, chọn vùng rồi xoá, bấm chuột giữa từ, thanh địa chỉ có gợi ý tự điền, ứng dụng không hỗ trợ thay thế trực tiếp.
+- 1.436 ca nhận lại từ sau khi xoá Space trong Telex/VNI, với các từ đáp ứng điều kiện dựng lại phím. Kết quả không bao phủ mọi từ hoặc việc nhận lại từ khi con trỏ báo trễ.
 
 `./scripts/live-test.sh` gõ bằng phím hệ thống thật vào NSTextView, NSTextField và WebKit qua bản VKey đang cài. Script cần quyền Accessibility cho `build/VKeyLiveTest.app` (chỉ công cụ test cần, VKey thì không). Lỗi bộ test từng báo không nhận được phím trên macOS 27.0.1 là do chỉ chạy `RunLoop` mà không xử lý hàng đợi sự kiện của AppKit; đã sửa để lấy và chuyển tiếp sự kiện bàn phím. Cách đọc `contenteditable` cũng đã sửa để giữ xuống dòng. Ngày 01/10/2026, 102 ca đều đã đạt qua lần chạy đầy đủ và chạy lại nhóm bị ảnh hưởng; xem [báo cáo live test](reports/LIVE-TEST.md). Bản 0.3.7 được dùng thử khi gõ hằng ngày nhưng chưa được kiểm tra tay có hệ thống trên Safari, Chrome, Terminal, VS Code; các kiểm tra tay của 0.2.0 nằm trong reports/INTEGRATION.md.
 

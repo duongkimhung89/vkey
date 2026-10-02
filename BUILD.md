@@ -12,9 +12,9 @@ Build date: 2026-10-02.
 - Disk image: `./scripts/package.sh`
 
 Output app: `dist/VKey.app`
-Output DMG: `dist/VKey-0.3.8-arm64.dmg` (local trial, not published); 0.3.9 has no DMG yet
+Output DMG: `dist/VKey-0.3.9-arm64.dmg`
 
-The compiler succeeds without source warnings. Build 18 is signed with the available Developer ID Application identity using hardened runtime and a secure timestamp; `codesign --verify --deep --strict` passes. Apple Notary Service accepted the DMG, its ticket was stapled and validated, and `spctl --assess` reports `accepted` with source `Notarized Developer ID`. There is no app sandbox or entitlement file. No system security controls were disabled. Build shell scripts are development-only; app runtime launches no subprocesses.
+The compiler succeeds without source warnings. Build 19 is signed with the available Developer ID Application identity using hardened runtime and a secure timestamp; `codesign --verify --deep --strict` passes. Apple Notary Service accepted the DMG, its ticket was stapled and validated, and `spctl --assess` reports `accepted` with source `Notarized Developer ID`. There is no app sandbox or entitlement file. No system security controls were disabled. Build shell scripts are development-only; app runtime launches no subprocesses.
 
 `open` succeeded outside the coding sandbox and the executable process was observed running. The coding sandbox initially returned a LaunchServices error; rerunning with normal desktop access succeeded. UI automation could not attach to this background input-method app. Launch success is not proof of active input-method integration.
 
@@ -48,11 +48,15 @@ Replaced the handcrafted Composer algorithm with a bounded adapter to the offlin
 
 Observed startup limitation: after terminating/replacing the app, Chrome initially passed several synthetic test keys through before the new input session became active. Repeating the sentence after activation succeeded completely; warm ABC/VKey switching also passed. Cold-start readiness is not claimed fully fixed. Do not interpret an installed or selected source alone as successful typing verification.
 
-## 0.3.9 (build 19) — local trial
+## 0.3.9 (build 19)
 
 Backspace back into a finished word: deleting the space or punctuation after a word and typing on continues that word (`duong ` ⌫ `972` → `đường`), in Telex and VNI. The word is read back from the document and turned into keys again, only when the caret is where VKey's own edits put it and those keys give back exactly the text shown. No history of finished words is kept. The activation and rebuilt-field (Zalo) rules of 0.3.7 are unchanged. See `reports/COMPOSITION-STYLE.md`.
 
-`./scripts/test.sh` passes with 0 failures, including 1,436 new cases over the test vocabulary. Installed on the build Mac with `./scripts/dev-install.sh` for live testing; not packaged, notarized, pushed or published.
+`./scripts/package.sh` completed with 0 test failures, including 1,436 cases over the test vocabulary, 984 rebuilt-field cases and 200 late-caret sessions for the existing composition flows. Dictionary coverage remains 7,672/7,884; the existing `qusy` edge case is unchanged. The production source audit and Developer ID signature checks passed. The click regression test commits the session as the controller does on a mouse event and uses `972` to avoid masking an unintended takeover with spelling restoration. Production typing code is unchanged from the reviewed trial.
+
+The release retains the reviewed limits: a late caret can prevent word takeover; `huơ` cannot be reconstructed for continuation into `hương`; Escape and spelling restoration use reconstructed keys for adopted words, so an invalid suffix can restore the old word as those keys. These limits are documented in README and `reports/COMPOSITION-STYLE.md`. No new systematic live test across host applications was run for this release; installed on the build Mac with `./scripts/dev-install.sh` for daily observation.
+
+Signed with Developer ID Application and hardened runtime. Apple Notary Service accepted submission `b02482ac-7983-43ca-8aae-1ac6c4180116`; the DMG ticket was stapled and validated, and `spctl --assess` reports `accepted` with source `Notarized Developer ID`. Published as `v0.3.9` on GitHub Releases with the DMG and SHA-256 checksum, with the Homebrew tap updated to the same artifact.
 
 ## 0.3.8 (build 18) — local trial
 

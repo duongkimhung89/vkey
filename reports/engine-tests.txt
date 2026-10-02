@@ -4,4 +4,8 @@ Reference transformation corpus: 401 cases
 English words: 1081/1211 unchanged, 40 with a doubled key (type it three times), the rest are also Vietnamese syllables
 Vietnamese text: 817 distinct words, 3268 typings
 Dictionary syllables: 7672/7884 typeable all four ways
+Keys before activation: 2322 cases
+Backspace back into a word: 1436 cases
+Rebuilt field: 984 cases
+Late caret: 200/200 sessions exact
 Commit, backspace and session checks done: 0 failures
