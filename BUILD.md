@@ -1,6 +1,6 @@
 # Build and installation report
 
-Build date: 2026-10-01.
+Build date: 2026-10-02.
 
 - Host: macOS 27.0.1 (26A434), Apple Silicon arm64.
 - Xcode: 27.0 (27A266a).
@@ -12,9 +12,9 @@ Build date: 2026-10-01.
 - Disk image: `./scripts/package.sh`
 
 Output app: `dist/VKey.app`
-Output DMG: `dist/VKey-0.3.7-arm64.dmg`
+Output DMG: `dist/VKey-0.3.8-arm64.dmg` (local trial, not published)
 
-The compiler succeeds without source warnings. Build 17 is signed with the available Developer ID Application identity using hardened runtime and a secure timestamp; `codesign --verify --deep --strict` passes. Apple Notary Service accepted the DMG, tickets were stapled to the app and DMG, and `spctl --assess` reports `accepted` with source `Notarized Developer ID`. There is no app sandbox or entitlement file. No system security controls were disabled. Build shell scripts are development-only; app runtime launches no subprocesses.
+The compiler succeeds without source warnings. Build 18 is signed with the available Developer ID Application identity using hardened runtime and a secure timestamp; `codesign --verify --deep --strict` passes. Apple Notary Service accepted the DMG, its ticket was stapled and validated, and `spctl --assess` reports `accepted` with source `Notarized Developer ID`. There is no app sandbox or entitlement file. No system security controls were disabled. Build shell scripts are development-only; app runtime launches no subprocesses.
 
 `open` succeeded outside the coding sandbox and the executable process was observed running. The coding sandbox initially returned a LaunchServices error; rerunning with normal desktop access succeeded. UI automation could not attach to this background input-method app. Launch success is not proof of active input-method integration.
 
@@ -47,6 +47,14 @@ Corrected bundle identifier to `local.inputmethod.VKey` and the matching IMK con
 Replaced the handcrafted Composer algorithm with a bounded adapter to the offline Vietnamese conversion engine. The InputMethodKit transport now uses direct replacement for the active word, avoiding marked-text decoration. VKey keeps a separate `VK` status-menu for language and Telex/VNI commands; the macOS input-source menu only selects `ABC` or `VKey`. Preferences remain in the old domain. The corresponding source, tests, build scripts and notices are kept in the repository; the DMG contains the app, a short install guide and an `Applications` shortcut. The app performs the per-user Input Methods copy/register step on its first launch from Applications.
 
 Observed startup limitation: after terminating/replacing the app, Chrome initially passed several synthetic test keys through before the new input session became active. Repeating the sentence after activation succeeded completely; warm ABC/VKey switching also passed. Cold-start readiness is not claimed fully fixed. Do not interpret an installed or selected source alone as successful typing verification.
+
+## 0.3.8 (build 18) — local trial
+
+The language tables are immutable static constants shared by active-word engines. Per-key hook output storage is reused, the unused return snapshot is removed, and Composer no longer normalizes text that the Unicode table already supplies in precomposed form. Each word still has its own engine; typed content and history are released at the word boundary. Conversion rules and text-client/caret handling are unchanged.
+
+`./scripts/package.sh` completed with 0 test failures, unchanged dictionary coverage (7,672/7,884), and the existing documented `qusy` edge case. Tests also check precomposed UTF-16 output at intermediate typing/editing steps and all vowel/tone forms in both cases and input modes. The production source audit and Developer ID signature checks passed.
+
+Apple Notary Service accepted submission `654a75a4-f5a2-4b31-8f93-d3362d394f01`; the DMG ticket was stapled and validated. The artifact and its SHA-256 checksum are in `dist/`. This version has not been pushed, published as a GitHub release, or added to Homebrew. The installed input method has not been replaced; live testing of 0.3.8 remains pending.
 
 ## 0.3.7 (build 17)
 

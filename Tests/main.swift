@@ -5,6 +5,14 @@ func expect(_ actual: String, _ expected: String, _ label: @autoclosure () -> St
  if actual != expected { print("FAIL \(label()): \(actual) != \(expected)"); failures += 1 }
 }
 
+// Swift String equality ignores canonical form. Check the actual encoding:
+// the host's UTF-16 replacement ranges require precomposed Vietnamese text.
+func expectPrecomposed(_ text: String, _ label: @autoclosure () -> String) {
+ if !text.utf16.elementsEqual(text.precomposedStringWithCanonicalMapping.utf16) {
+  print("FAIL decomposed output \(label()): \(text)"); failures += 1
+ }
+}
+
 // MARK: - Conversion of a single word (what is shown while typing)
 
 let cases: [(TypingMode, String, String)] = [
@@ -33,7 +41,9 @@ let cases: [(TypingMode, String, String)] = [
  (.vni,"a10","a"),(.vni,"12345","12345"),(.vni,"a11","a1")
 ]
 for (mode, raw, expected) in cases {
- expect(Composer.convert(raw, mode: mode), expected, "\(mode) \(raw)")
+ let actual = Composer.convert(raw, mode: mode)
+ expect(actual, expected, "\(mode) \(raw)")
+ expectPrecomposed(actual, "\(mode) \(raw)")
 }
 let corpusURL = URL(fileURLWithPath: "Tests/xkey-conversion-cases.json")
 let corpus = try! JSONDecoder().decode([[String]].self, from: Data(contentsOf: corpusURL))
@@ -56,7 +66,10 @@ print("\(cases.count) conversion cases")
 func committed(_ raw: String, _ mode: TypingMode) -> String {
  var composer = Composer()
  composer.mode = mode
- for c in raw { composer.append(c) }
+ for c in raw {
+  composer.append(c)
+  expectPrecomposed(composer.text, "prefix of \(mode) \(raw)")
+ }
  return composer.committedText
 }
 let commitCases: [(TypingMode, String, String)] = [
@@ -157,6 +170,20 @@ func keys(for word: String, mode: TypingMode, toneAtEnd: Bool) -> String? {
  }
  return result + pending
 }
+
+// Every Vietnamese vowel/tone, including uppercase, must reach the client
+// in precomposed form even without a normalization pass in Composer.
+for row in toneRows {
+ for letter in row.forms {
+  for word in [String(letter), letter.uppercased()] {
+   for mode in [TypingMode.telex, .vni] {
+    let raw = keys(for: word, mode: mode, toneAtEnd: true)!
+    expect(committed(raw, mode), word, "vowel \(mode) \(raw)")
+   }
+  }
+ }
+}
+
 /// Old and new tone placement (hòa/hoà) count as the same word.
 func toneless(_ word: String) -> String {
  var tone = 0
@@ -235,7 +262,10 @@ for word in ["uẻ","ưindows","hóue","leà","ră","ảe","tẽt","kêp","việ
 func typed(_ keys: String, _ mode: TypingMode) -> Composer {
  var composer = Composer()
  composer.mode = mode
- for c in keys { if c == "<" { composer.backspace() } else { composer.append(c) } }
+ for c in keys {
+  if c == "<" { composer.backspace() } else { composer.append(c) }
+  expectPrecomposed(composer.text, "editing \(mode) \(keys)")
+ }
  return composer
 }
 let backspaceCases: [(TypingMode, String, String)] = [

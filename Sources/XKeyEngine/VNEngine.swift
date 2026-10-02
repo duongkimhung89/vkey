@@ -1,5 +1,6 @@
 // Adapted from XKey, copyright (c) 2025 XKey (MIT). See Resources/Licenses and THIRD_PARTY_NOTICES.md.
 // Modified 2026-09-30: no logging callbacks; engine core only, no host integration.
+// Modified 2026-10-02: shared immutable tables and reused per-key output storage.
 // XKey identifies this engine as a Swift port based on the GPL-3.0 OpenKey engine.
 // OpenKey provenance: Copyright © 2019 Tuyen Mai / Mai Vu Tuyen; GPL-3.0.
 //
@@ -186,6 +187,15 @@ class VNEngine {
         var extCode: UInt8 = 0        // 1: WordBreak, 2: Delete, 3: Normal, 4: ShouldNotSendEmpty, 5: InstantRestore
         var charData = [UInt32](repeating: 0, count: MAX_BUFF)
         var macroKey = [UInt32]()
+
+        /// Reuse the output buffer; only macro keys accumulate across events.
+        mutating func beginKey() {
+            code = 0
+            backspaceCount = 0
+            newCharCount = 0
+            extCode = 0
+            for i in charData.indices { charData[i] = 0 }
+        }
     }
     
     var hookState = HookState()
@@ -197,14 +207,9 @@ class VNEngine {
     let vReplaceMacro = 4
     let vRestoreAndStartNewSession = 5
     
-    // MARK: - Vietnamese Data Tables
-    
-    let vietnameseData: VietnameseData
-    
     // MARK: - Initialization
     
     init() {
-        vietnameseData = VietnameseData()
         useSpellCheckingBefore = (vCheckSpelling == 1)
     }
     
@@ -216,20 +221,10 @@ class VNEngine {
     ///   - character: The character
     ///   - isUppercase: Whether Shift or CapsLock is active
     ///   - hasOtherModifier: Whether Ctrl/Cmd/Option is pressed
-    /// - Returns: HookState with processing result
-    func handleKeyEvent(keyCode: UInt16, character: Character, isUppercase: Bool, hasOtherModifier: Bool) -> HookState {
-        // Debug: Log Space key
-        if keyCode == VietnameseData.KEY_SPACE {
-        }
-        
-        // Save macroKey before reset (it accumulates across key events)
-        let savedMacroKey = hookState.macroKey
-        
-        // Reset hook state
-        hookState = HookState()
-        
-        // Restore macroKey
-        hookState.macroKey = savedMacroKey
+    /// Updates the word buffer and internal hook state in place. No result
+    /// snapshot escapes, so the next key can reuse the hook's output storage.
+    func handleKeyEvent(keyCode: UInt16, character: Character, isUppercase: Bool, hasOtherModifier: Bool) {
+        hookState.beginKey()
         
         let isCaps = isUppercase
 
@@ -239,13 +234,13 @@ class VNEngine {
         // exactly one method. Downstream code keeps reading a concrete vInputType
         // (0/1) and never sees the adaptive sentinel (4).
         if vAdaptiveEnabled {
-            vInputType = vietnameseData.isNumberKey(keyCode) ? 1 : 0
+            vInputType = VietnameseData.isNumberKey(keyCode) ? 1 : 0
         }
 
         // Check if number key with shift or has other modifier
-        if (vietnameseData.isNumberKey(keyCode) && isUppercase) || hasOtherModifier || isWordBreak(keyCode: keyCode) {
+        if (VietnameseData.isNumberKey(keyCode) && isUppercase) || hasOtherModifier || isWordBreak(keyCode: keyCode) {
             handleWordBreak(keyCode: keyCode, character: character, isCaps: isCaps)
-            return hookState
+            return
         }
         
         // NOTE: Space is handled by processWordBreak() which is called directly by handlers
@@ -253,34 +248,32 @@ class VNEngine {
         // Handle delete/backspace
         if keyCode == VietnameseData.KEY_DELETE {
             handleDelete()
-            return hookState
+            return
         }
         
         // Handle normal key
         handleNormalKey(keyCode: keyCode, character: character, isCaps: isCaps)
-        
-        return hookState
     }
     
     // MARK: - Word Break Handling
     
     private func isWordBreak(keyCode: UInt16) -> Bool {
-        return vietnameseData.breakCode.contains(keyCode)
+        return VietnameseData.breakCode.contains(keyCode)
     }
     
     private func isMacroBreakCode(keyCode: UInt16) -> Bool {
-        return vietnameseData.macroBreakCode.contains(keyCode)
+        return VietnameseData.macroBreakCode.contains(keyCode)
     }
 
     private func isMacroBreakCode(keyCode: UInt16, isCaps: Bool) -> Bool {
         // Check if it's in the standard macro break code list
-        if vietnameseData.macroBreakCode.contains(keyCode) {
+        if VietnameseData.macroBreakCode.contains(keyCode) {
             return true
         }
 
         // Special case: number keys with Shift produce special characters (@, !, #, etc.)
         // and should also trigger macro replacement
-        if isCaps && vietnameseData.isNumberKey(keyCode) {
+        if isCaps && VietnameseData.isNumberKey(keyCode) {
             return true
         }
 
@@ -296,7 +289,7 @@ class VNEngine {
         // For special characters that can be part of a macro (like @, !, #, ~),
         // just add them to macroKey WITHOUT triggering macro replacement.
         // Macro replacement should only happen when user presses SPACE.
-        let isCharKeyCode = vietnameseData.charKeyCode.contains(keyCode)
+        let isCharKeyCode = VietnameseData.charKeyCode.contains(keyCode)
         if false && isMacroBreakCode(keyCode: keyCode, isCaps: isCaps) && !hasHandledMacro {
             if isCharKeyCode {
                 // Add character to macroKey for building macros like "you@" or "!bb"
@@ -560,11 +553,11 @@ class VNEngine {
         // Skip if instant restore has occurred (extCode == 5) - word is being discarded
         if !isKeyD(keyCode: keyCode, inputType: vInputType) && hookState.extCode != 5 {
             // Check if this key is an end consonant
-            let isEndConsonant = vietnameseData.isConsonant(keyCode) && index > 1
+            let isEndConsonant = VietnameseData.isConsonant(keyCode) && index > 1
             
             // Check if this key is a vowel and the word already has a mark
             var isVowelWithExistingMark = false
-            if !vietnameseData.isConsonant(keyCode) && index > 1 {
+            if !VietnameseData.isConsonant(keyCode) && index > 1 {
                 // Check if any existing vowel has a mark
                 for i in 0..<Int(index) - 1 {
                     if (typingWord[i] & VNEngine.MARK_MASK) != 0 {
@@ -688,17 +681,17 @@ class VNEngine {
             var isChanged = false
             var k = Int(index)
             
-            for i in 0..<vietnameseData.consonantDTable.count {
-                if Int(index) < vietnameseData.consonantDTable[i].count {
+            for i in 0..<VietnameseData.consonantDTable.count {
+                if Int(index) < VietnameseData.consonantDTable[i].count {
                     continue
                 }
                 isCorrect = true
                 k = Int(index)
                 
                 // Check if matches consonant D pattern
-                for j in stride(from: vietnameseData.consonantDTable[i].count - 1, through: 0, by: -1) {
+                for j in stride(from: VietnameseData.consonantDTable[i].count - 1, through: 0, by: -1) {
                     let endMask: UInt16 = vQuickEndConsonant == 1 ? 0x4000 : 0
-                    if (vietnameseData.consonantDTable[i][j] & ~endMask) != chr(k - 1) {
+                    if (VietnameseData.consonantDTable[i][j] & ~endMask) != chr(k - 1) {
                         isCorrect = false
                         break
                     }
@@ -710,7 +703,7 @@ class VNEngine {
                 
                 // Allow d after consonant
                 if !isCorrect && Int(index) >= 2 && chr(Int(index) - 1) == VietnameseData.KEY_D &&
-                   vietnameseData.isConsonant(chr(Int(index) - 2)) {
+                   VietnameseData.isConsonant(chr(Int(index) - 2)) {
                     isCorrect = true
                 }
                 
@@ -794,7 +787,7 @@ class VNEngine {
             return
         }
         
-        for (_, charsets) in vietnameseData.vowelForMarkTable {
+        for (_, charsets) in VietnameseData.vowelForMarkTable {
             for charset in charsets {
                 if Int(index) < charset.count {
                     continue
@@ -1009,7 +1002,7 @@ class VNEngine {
         }
         
         
-        guard let charsets = vietnameseData.vowelTable[keyForAEO] else {
+        guard let charsets = VietnameseData.vowelTable[keyForAEO] else {
             if keyCode == VietnameseData.KEY_W && vInputType != 2 {
                 checkForStandaloneChar(data: keyCode, isCaps: isCaps, keyWillReverse: VietnameseData.KEY_U)
             } else {
@@ -1204,19 +1197,19 @@ class VNEngine {
     }
     
     private func isKeyZ(keyCode: UInt16, inputType: Int) -> Bool {
-        return vietnameseData.processingChar[inputType][10] == keyCode
+        return VietnameseData.processingChar[inputType][10] == keyCode
     }
     
     private func isKeyD(keyCode: UInt16, inputType: Int) -> Bool {
-        return vietnameseData.processingChar[inputType][9] == keyCode
+        return VietnameseData.processingChar[inputType][9] == keyCode
     }
     
     private func isKeyW(keyCode: UInt16, inputType: Int) -> Bool {
         if inputType != 1 {
-            return vietnameseData.processingChar[inputType][8] == keyCode
+            return VietnameseData.processingChar[inputType][8] == keyCode
         } else {
-            return vietnameseData.processingChar[inputType][8] == keyCode ||
-                   vietnameseData.processingChar[inputType][7] == keyCode
+            return VietnameseData.processingChar[inputType][8] == keyCode ||
+                   VietnameseData.processingChar[inputType][7] == keyCode
         }
     }
     
@@ -1260,7 +1253,7 @@ class VNEngine {
         // Allow d after consonant
         if keyCode == VietnameseData.KEY_D && buffer.count >= 2 {
             let prevKey = buffer.keyCode(at: buffer.count - 2)
-            if vietnameseData.isConsonant(prevKey) {
+            if VietnameseData.isConsonant(prevKey) {
                 tempDisableKey = false
             }
         }
@@ -1708,7 +1701,7 @@ class VNEngine {
         
         for i in stride(from: Int(index) - 1, through: 0, by: -1) {
             let keyCode = UInt16(typingWord[i] & VNEngine.CHAR_MASK)
-            if vietnameseData.isConsonant(keyCode) {
+            if VietnameseData.isConsonant(keyCode) {
                 if vowelCount > 0 {
                     break
                 }
@@ -1844,10 +1837,10 @@ class VNEngine {
         // ============================================
         // Check first consonant (with consonantTable)
         // ============================================
-        if vietnameseData.isConsonant(chr(0)) {
+        if VietnameseData.isConsonant(chr(0)) {
             var foundMatch = false
             
-            for consonantPattern in vietnameseData.consonantTable {
+            for consonantPattern in VietnameseData.consonantTable {
                 // Check if word starts with this consonant pattern
                 if Int(spellingEndIndex) < consonantPattern.count {
                     continue  // Word too short for this pattern
@@ -1909,7 +1902,7 @@ class VNEngine {
         else if index >= 2 &&
                 chr(0) == VietnameseData.KEY_G &&
                 chr(1) == VietnameseData.KEY_I &&
-                index >= 3 && vietnameseData.isConsonant(chr(2)) {
+                index >= 3 && VietnameseData.isConsonant(chr(2)) {
             vowelStartIdx = 1
             k = 1
             j = 1
@@ -1917,7 +1910,7 @@ class VNEngine {
         
         // Count vowels (up to 3)
         for _ in 0..<3 {
-            if k < Int(spellingEndIndex) && !vietnameseData.isConsonant(chr(k)) {
+            if k < Int(spellingEndIndex) && !VietnameseData.isConsonant(chr(k)) {
                 k += 1
             }
         }
@@ -1938,7 +1931,7 @@ class VNEngine {
             for ri in 1..<rawKeystrokes.count {
                 let prevKey = rawKeystrokes[ri - 1].keyCode
                 let curKey = rawKeystrokes[ri].keyCode
-                if curKey == prevKey && !vietnameseData.isConsonant(curKey) {
+                if curKey == prevKey && !VietnameseData.isConsonant(curKey) {
                     currentRun += 1
                     if currentRun > maxRun { maxRun = currentRun }
                 } else {
@@ -1965,12 +1958,12 @@ class VNEngine {
                 // Complex vowel check (similar to OpenKey's vowel combine check)
                 // For now, we assume vowel is OK
                 spellingVowelOK = true
-            } else if !vietnameseData.isConsonant(chr(j)) {
+            } else if !VietnameseData.isConsonant(chr(j)) {
                 spellingVowelOK = true
             }
             
             // Continue check last consonant
-            for endPattern in vietnameseData.endConsonantTable {
+            for endPattern in VietnameseData.endConsonantTable {
                 var matches = true
                 
                 for (patternIdx, patternKey) in endPattern.enumerated() {
@@ -2528,7 +2521,7 @@ class VNEngine {
         
         // Rule 2: 3 vowels or has ending consonant
         // For old style: "hòa" (no ending) vs "hoàn" (has ending 'n')
-        if vowelCount == 3 || (vowelEndIndex + 1 < Int(index) && vietnameseData.isConsonant(chr(vowelEndIndex + 1)) && canHasEndConsonant()) {
+        if vowelCount == 3 || (vowelEndIndex + 1 < Int(index) && VietnameseData.isConsonant(chr(vowelEndIndex + 1)) && canHasEndConsonant()) {
             vowelWillSetMark = vowelStartIndex + 1
             hookState.backspaceCount = Int(index) - vowelWillSetMark
         }
@@ -2540,7 +2533,7 @@ class VNEngine {
             let v1 = chr(vowelStartIndex)
             let v2 = chr(vowelStartIndex + 1)
             let hasEndConsonant = vowelEndIndex + 1 < Int(index) &&
-                                  vietnameseData.isConsonant(chr(vowelEndIndex + 1)) &&
+                                  VietnameseData.isConsonant(chr(vowelEndIndex + 1)) &&
                                   canHasEndConsonant()
 
             if v1 == VietnameseData.KEY_U && v2 == VietnameseData.KEY_Y && !hasEndConsonant {
@@ -2635,7 +2628,7 @@ class VNEngine {
             return
         } else if index == 2 {
             // Check double consonant combinations (kh, th, tr, ch, nh, ng, gh, gi, ph)
-            for allowed in vietnameseData.doubleWAllowed {
+            for allowed in VietnameseData.doubleWAllowed {
                 if chr(0) == allowed[0] && chr(1) == allowed[1] {
                     insertKey(keyCode: data, isCaps: isCaps, isCheckSpelling: false)
                     reverseLastStandaloneChar(keyCode: keyWillReverse, isCaps: isCaps)
@@ -2716,7 +2709,7 @@ class VNEngine {
         if firstKeyCode == VietnameseData.KEY_SPACE {
             spaceCount = lastSnapshot.count
             buffer.clear()
-        } else if vietnameseData.charKeyCode.contains(firstKeyCode) {
+        } else if VietnameseData.charKeyCode.contains(firstKeyCode) {
             buffer.clear()
             specialChar = lastSnapshot.allProcessedData
             if vCheckSpelling == 1 {
@@ -2762,7 +2755,7 @@ class VNEngine {
         }
         
         // Get code table
-        let codeTable = vietnameseData.codeTables[vCodeTable]
+        let codeTable = VietnameseData.codeTables[vCodeTable]
         
         if (data & VNEngine.MARK_MASK) != 0 {
             // Has mark - calculate mark element index
@@ -2916,7 +2909,8 @@ class VNEngine {
         // If space: keep/upgrade upperCaseStatus (preserves period/newline status)
     }
 
-    /// Get current typing word as string (for debugging and display)
+    /// Render the current word. In Unicode mode the lookup table supplies
+    /// precomposed scalars, so callers do not need to normalize it again.
     func getCurrentWord() -> String {
         var result = ""
         for i in 0..<Int(index) {
@@ -2928,11 +2922,11 @@ class VNEngine {
                 // Unicode character
                 let unicodeValue = charCode & 0xFFFF
                 if let scalar = UnicodeScalar(unicodeValue) {
-                    var char = String(Character(scalar))
                     if isCaps {
-                        char = char.uppercased()
+                        result.append(String(scalar).uppercased())
+                    } else {
+                        result.unicodeScalars.append(scalar)
                     }
-                    result.append(char)
                 }
             } else {
                 // Key code - convert to character using macOS key code mapping

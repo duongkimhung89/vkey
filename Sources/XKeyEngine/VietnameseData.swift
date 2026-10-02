@@ -1,5 +1,6 @@
 // Adapted from XKey, copyright (c) 2025 XKey (MIT). See Resources/Licenses and THIRD_PARTY_NOTICES.md.
 // Modified 2026-09-30: no logging callbacks; engine core only, no host integration.
+// Modified 2026-10-02: immutable static tables; no per-word data initialization.
 // XKey identifies these language tables as ported from the GPL-3.0 OpenKey engine.
 // OpenKey provenance: Copyright © 2019 Tuyen Mai / Mai Vu Tuyen; GPL-3.0.
 //
@@ -11,8 +12,9 @@
 
 import Foundation
 
-/// Contains all Vietnamese language data tables (vowels, consonants, code tables)
-class VietnameseData {
+/// Immutable language tables shared by every active-word engine.
+/// Static constants initialize once; typed content never lives here.
+enum VietnameseData {
     
     // MARK: - Key Codes (from platforms/mac.h)
     
@@ -80,7 +82,7 @@ class VietnameseData {
     
     // MARK: - Processing Characters (from Engine.cpp)
     
-    let processingChar: [[UInt16]] = [
+    static let processingChar: [[UInt16]] = [
         // Telex
         [KEY_S, KEY_F, KEY_R, KEY_X, KEY_J, KEY_A, KEY_O, KEY_E, KEY_W, KEY_D, KEY_Z],
         // VNI
@@ -93,19 +95,19 @@ class VietnameseData {
     
     // MARK: - Break Codes
     
-    let breakCode: [UInt16] = [
+    static let breakCode: [UInt16] = [
         KEY_ESC, KEY_TAB, KEY_ENTER, KEY_RETURN, KEY_LEFT, KEY_RIGHT, KEY_DOWN, KEY_UP,
         KEY_COMMA, KEY_DOT, KEY_SLASH, KEY_SEMICOLON, KEY_QUOTE, KEY_BACK_SLASH,
         KEY_MINUS, KEY_EQUALS, KEY_BACKQUOTE
     ]
     
-    let macroBreakCode: [UInt16] = [
+    static let macroBreakCode: [UInt16] = [
         KEY_RETURN, KEY_COMMA, KEY_DOT, KEY_SLASH, KEY_SEMICOLON, KEY_QUOTE,
         KEY_BACK_SLASH, KEY_MINUS, KEY_EQUALS, KEY_BACKQUOTE,
         KEY_LEFT_BRACKET, KEY_RIGHT_BRACKET
     ]
     
-    let charKeyCode: [UInt16] = [
+    static let charKeyCode: [UInt16] = [
         KEY_BACKQUOTE, KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9, KEY_0,
         KEY_MINUS, KEY_EQUALS, KEY_LEFT_BRACKET, KEY_RIGHT_BRACKET, KEY_BACK_SLASH,
         KEY_SEMICOLON, KEY_QUOTE, KEY_COMMA, KEY_DOT, KEY_SLASH
@@ -122,7 +124,7 @@ class VietnameseData {
     static let standaloneWbadConditional: [UInt16] = [KEY_W, KEY_F, KEY_J, KEY_Z, KEY_K]
     
     // Double W allowed (consonant combinations)
-    let doubleWAllowed: [[UInt16]] = [
+    static let doubleWAllowed: [[UInt16]] = [
         [KEY_T, KEY_R], [KEY_T, KEY_H], [KEY_C, KEY_H], [KEY_N, KEY_H],
         [KEY_N, KEY_G], [KEY_K, KEY_H], [KEY_G, KEY_I], [KEY_P, KEY_H], [KEY_G, KEY_H]
     ]
@@ -134,7 +136,7 @@ class VietnameseData {
     static let CONSONANT_ALLOW_MASK: UInt16 = 0x8000
     static let END_CONSONANT_MASK: UInt16 = 0x4000
     
-    let consonantTable: [[UInt16]] = [
+    static let consonantTable: [[UInt16]] = [
         [KEY_N, KEY_G, KEY_H],
         [KEY_P, KEY_H],
         [KEY_T, KEY_H],
@@ -175,7 +177,7 @@ class VietnameseData {
         [KEY_J | END_CONSONANT_MASK]
     ]
     
-    let endConsonantTable: [[UInt16]] = [
+    static let endConsonantTable: [[UInt16]] = [
         [KEY_T], [KEY_P], [KEY_C], [KEY_N], [KEY_M],
         // Literal final 'k' for ethnic-minority / Central-Highlands place names
         // (e.g. Đắk Lắk, Krông Búk, M'Đrắk). 'k' is not a standard Vietnamese final;
@@ -192,7 +194,7 @@ class VietnameseData {
     // MARK: - Vowel Tables (from Vietnamese.cpp _vowel)
     
     // Vowel combinations for each starting vowel key
-    let vowelTable: [UInt16: [[UInt16]]] = [
+    static let vowelTable: [UInt16: [[UInt16]]] = [
         KEY_A: [
             [KEY_A, KEY_N, KEY_G], [KEY_A, KEY_G | 0x4000],
             [KEY_A, KEY_N],
@@ -261,7 +263,7 @@ class VietnameseData {
     
     // MARK: - Vowel For Mark Table (from Vietnamese.cpp _vowelForMark)
     
-    let vowelForMarkTable: [UInt16: [[UInt16]]] = [
+    static let vowelForMarkTable: [UInt16: [[UInt16]]] = [
         KEY_A: [
             [KEY_A, KEY_N, KEY_G], [KEY_A, KEY_G | 0x4000],
             [KEY_A, KEY_N],
@@ -349,7 +351,7 @@ class VietnameseData {
     
     // MARK: - Consonant D Table (from Vietnamese.cpp _consonantD)
     
-    let consonantDTable: [[UInt16]] = [
+    static let consonantDTable: [[UInt16]] = [
         [KEY_D, KEY_E, KEY_N, KEY_H], [KEY_D, KEY_E, KEY_H | 0x4000],
         [KEY_D, KEY_E, KEY_N, KEY_G], [KEY_D, KEY_E, KEY_G | 0x4000],
         [KEY_D, KEY_E, KEY_C, KEY_H], [KEY_D, KEY_E, KEY_K | 0x4000],
@@ -424,7 +426,7 @@ class VietnameseData {
     // For marks: [Sắc_CAPS, Sắc_normal, Huyền_CAPS, Huyền_normal, Hỏi_CAPS, Hỏi_normal, Ngã_CAPS, Ngã_normal, Nặng_CAPS, Nặng_normal]
     
     // Unicode Code Table (index 0)
-    let unicodeCodeTable: [UInt32: [UInt32]] = [
+    static let unicodeCodeTable: [UInt32: [UInt32]] = [
         // KEY_A: Â, â, Ă, ă, Á, á, À, à, Ả, ả, Ã, ã, Ạ, ạ
         0x20000 | UInt32(KEY_A): [0x00C2, 0x00E2, 0x0102, 0x0103, 0x00C1, 0x00E1, 0x00C0, 0x00E0, 0x1EA2, 0x1EA3, 0x00C3, 0x00E3, 0x1EA0, 0x1EA1],
         // KEY_O: Ô, ô, Ơ, ơ, Ó, ó, Ò, ò, Ỏ, ỏ, Õ, õ, Ọ, ọ
@@ -468,7 +470,7 @@ class VietnameseData {
     ]
     
     // TCVN3 (ABC) Code Table (index 1) - 1 byte character
-    let tcvn3CodeTable: [UInt32: [UInt32]] = [
+    static let tcvn3CodeTable: [UInt32: [UInt32]] = [
         0x20000 | UInt32(KEY_A): [0xA2, 0xA9, 0xA1, 0xA8, 0xB8, 0xB8, 0xB5, 0xB5, 0xB6, 0xB6, 0xB7, 0xB7, 0xB9, 0xB9],
         0x20000 | UInt32(KEY_O): [0xA4, 0xAB, 0xA5, 0xAC, 0xE3, 0xE3, 0xDF, 0xDF, 0xE1, 0xE1, 0xE2, 0xE2, 0xE4, 0xE4],
         0x40000 | UInt32(KEY_U): [0x00, 0x00, 0xA6, 0xAD, 0xF3, 0xF3, 0xEF, 0xEF, 0xF1, 0xF1, 0xF2, 0xF2, 0xF4, 0xF4],
@@ -490,7 +492,7 @@ class VietnameseData {
     ]
     
     // VNI Windows Code Table (index 2) - 2 byte character
-    let vniWindowsCodeTable: [UInt32: [UInt32]] = [
+    static let vniWindowsCodeTable: [UInt32: [UInt32]] = [
         0x20000 | UInt32(KEY_A): [0xC241, 0xE261, 0xCA41, 0xEA61, 0xD941, 0xF961, 0xD841, 0xF861, 0xDB41, 0xFB61, 0xD541, 0xF561, 0xCF41, 0xEF61],
         0x20000 | UInt32(KEY_O): [0xC24F, 0xE26F, 0x00D4, 0x00F4, 0xD94F, 0xF96F, 0xD84F, 0xF86F, 0xDB4F, 0xFB6F, 0xD54F, 0xF56F, 0xCF4F, 0xEF6F],
         0x40000 | UInt32(KEY_U): [0x0000, 0x0000, 0x00D6, 0x00F6, 0xD955, 0xF975, 0xD855, 0xF875, 0xDB55, 0xFB75, 0xD555, 0xF575, 0xCF55, 0xEF75],
@@ -517,7 +519,7 @@ class VietnameseData {
     // Index 2: VNI Windows
     // Index 3: Unicode Compound (uses same character codes as Unicode, differs in output encoding)
     // Index 4: Vietnamese Locale CP1258 (uses same character codes as Unicode, differs in output encoding)
-    lazy var codeTables: [[UInt32: [UInt32]]] = [
+    static let codeTables: [[UInt32: [UInt32]]] = [
         unicodeCodeTable,           // 0: Unicode
         tcvn3CodeTable,             // 1: TCVN3 (ABC)
         vniWindowsCodeTable,        // 2: VNI Windows
@@ -575,13 +577,13 @@ class VietnameseData {
         return keyCodeToCharacterMap[keyCode]
     }
     
-    func isConsonant(_ keyCode: UInt16) -> Bool {
+    static func isConsonant(_ keyCode: UInt16) -> Bool {
         return !(keyCode == VietnameseData.KEY_A || keyCode == VietnameseData.KEY_E ||
                  keyCode == VietnameseData.KEY_U || keyCode == VietnameseData.KEY_Y ||
                  keyCode == VietnameseData.KEY_I || keyCode == VietnameseData.KEY_O)
     }
     
-    func isNumberKey(_ keyCode: UInt16) -> Bool {
+    static func isNumberKey(_ keyCode: UInt16) -> Bool {
         return keyCode == VietnameseData.KEY_1 || keyCode == VietnameseData.KEY_2 ||
                keyCode == VietnameseData.KEY_3 || keyCode == VietnameseData.KEY_4 ||
                keyCode == VietnameseData.KEY_5 || keyCode == VietnameseData.KEY_6 ||
@@ -589,7 +591,7 @@ class VietnameseData {
                keyCode == VietnameseData.KEY_9 || keyCode == VietnameseData.KEY_0
     }
 
-    func isLetter(_ keyCode: UInt16) -> Bool {
+    static func isLetter(_ keyCode: UInt16) -> Bool {
         return keyCode == VietnameseData.KEY_A || keyCode == VietnameseData.KEY_B ||
                keyCode == VietnameseData.KEY_C || keyCode == VietnameseData.KEY_D ||
                keyCode == VietnameseData.KEY_E || keyCode == VietnameseData.KEY_F ||

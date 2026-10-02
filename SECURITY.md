@@ -1,4 +1,4 @@
-# VKey 0.3.7 — Security and privacy
+# VKey 0.3.8 — Security and privacy
 
 Network: Does this app access the Internet? **NO application network features or requests.**
 Keystroke storage: Does this app save keystrokes? **NO persistent storage.**
@@ -24,7 +24,7 @@ The application-written preferences are `TypingMode` (telex/vni), `VietnameseEna
 
 - `scripts/audit.sh` checks production source for networking, logging, clipboard, process launching and event-tap API patterns, and records linked libraries, undefined symbols and signing information.
 - Binary links only Apple system frameworks and Swift runtimes. The adapted Vietnamese conversion source is compiled into the binary; no embedded third-party binary frameworks or packages. See THIRD_PARTY_NOTICES.md for provenance and license information.
-- The current build output `dist/VKey.app` uses the Developer ID Application certificate with hardened runtime and no entitlements. The build script selects `VKEY_CODESIGN_IDENTITY` or the first available Developer ID Application identity. Build 10 was accepted by Apple Notary Service, and the app plus DMG have stapled tickets; local `spctl` reports `accepted` with source `Notarized Developer ID`. An older installed input-method copy may remain ad-hoc until the build-number-10 app is opened and updates it. **Not App Sandbox enabled:** absence of network entitlements alone does not prohibit network access for a non-sandboxed app. The offline conclusion is based on the small source implementation and symbol inspection, not a claim of an OS-enforced network firewall.
+- The current local trial build output `dist/VKey.app` (0.3.8, build 18) uses the Developer ID Application certificate with hardened runtime and no entitlements. The build script selects `VKEY_CODESIGN_IDENTITY` or the first available Developer ID Application identity. Apple Notary Service accepted the DMG, its ticket was stapled and validated, and local `spctl` reports `accepted` with source `Notarized Developer ID`. The installed input-method copy is updated only when the new app is opened. **Not App Sandbox enabled:** absence of network entitlements alone does not prohibit network access for a non-sandboxed app. The offline conclusion is based on the small source implementation and symbol inspection, not a claim of an OS-enforced network firewall.
 - Launched successfully on the build Mac; `lsof -nP -a -c VKey -i` found no Internet sockets at the observation time. This snapshot is not proof of all future behavior.
 - Engine tests pass locally and also under a test-only deny-network sandbox (see test report when available). Full app typing with the Mac physically disconnected has not been tested.
 - No security settings, TCC database, SIP, or Gatekeeper settings were changed.

@@ -2,7 +2,9 @@
 
 Bộ gõ tiếng Việt native cho macOS, Telex/VNI, Unicode, hoàn toàn offline.
 Cho Apple Silicon, macOS 13 trở lên; mới build/chạy trên macOS 27.0.1.
-Bản mới nhất là 0.3.7, có DMG trên GitHub Releases và cài được qua Homebrew (`brew install --cask duongkimhung89/vkey/vkey`).
+Bản công khai mới nhất là 0.3.7, có DMG trên GitHub Releases và cài được qua Homebrew (`brew install --cask duongkimhung89/vkey/vkey`).
+
+Bản 0.3.8 (build 18) đang thử nghiệm cục bộ, chưa phát hành lên GitHub hoặc Homebrew. Bản này dùng chung các bảng ngôn ngữ bất biến, tái sử dụng vùng kết quả của engine qua các phím và bỏ bước chuẩn hóa Unicode dư; quy tắc chuyển dấu và cơ chế xử lý con trỏ giữ nguyên. DMG dùng thử được tạo tại `dist/VKey-0.3.8-arm64.dmg`.
 
 ## Cài từ DMG
 

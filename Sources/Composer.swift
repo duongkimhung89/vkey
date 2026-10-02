@@ -22,9 +22,6 @@ struct Composer {
     /// Set once a key the engine has no code for arrives; the word then stays as typed.
     private var literal = false
 
-    private static let keyCodes = Dictionary(uniqueKeysWithValues:
-        VietnameseData.keyCodeToCharacterMap.map { ($0.value, $0.key) })
-
     mutating func reset() {
         raw = ""
         text = ""
@@ -34,16 +31,16 @@ struct Composer {
 
     mutating func append(_ character: Character) {
         raw.append(character)
-        guard !literal, let lower = character.lowercased().first, let code = Self.keyCodes[lower] else {
+        guard !literal, let code = VietnameseData.keyCode(for: character) else {
             literal = true
             text = raw
             return
         }
         let engine = self.engine ?? Self.makeEngine(mode: mode, checksSpelling: checksSpelling)
         self.engine = engine
-        _ = engine.handleKeyEvent(keyCode: code, character: character,
-                                  isUppercase: character.isUppercase, hasOtherModifier: false)
-        text = Self.word(in: engine)
+        engine.handleKeyEvent(keyCode: code, character: character,
+                              isUppercase: character.isUppercase, hasOtherModifier: false)
+        text = engine.getCurrentWord()
     }
 
     /// Remove the last character of the word, as Backspace does in any editor.
@@ -58,9 +55,9 @@ struct Composer {
             return
         }
         let before = engine.buffer.getKeystrokeSequence()
-        _ = engine.handleKeyEvent(keyCode: VietnameseData.KEY_DELETE, character: "\u{8}",
-                                  isUppercase: false, hasOtherModifier: false)
-        text = Self.word(in: engine)
+        engine.handleKeyEvent(keyCode: VietnameseData.KEY_DELETE, character: "\u{8}",
+                              isUppercase: false, hasOtherModifier: false)
+        text = engine.getCurrentWord()
         // Drop the keys that belonged to the removed character.  The engine
         // keeps one record per key in typing order, tagged with its character.
         let surviving = Set(engine.buffer.getKeystrokeSequence().map(\.entryId))
@@ -111,10 +108,6 @@ struct Composer {
         engine.vUpperCaseFirstChar = 0
         engine.vUseModernOrthography = 1
         return engine
-    }
-
-    private static func word(in engine: VNEngine) -> String {
-        engine.getCurrentWord().precomposedStringWithCanonicalMapping
     }
 
     static func convert(_ raw: String, mode: TypingMode) -> String {

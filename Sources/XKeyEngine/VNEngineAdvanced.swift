@@ -1,5 +1,6 @@
 // Adapted from XKey, copyright (c) 2025 XKey (MIT). See Resources/Licenses and THIRD_PARTY_NOTICES.md.
 // Modified 2026-09-30: no logging callbacks; engine core only, no host integration.
+// Modified 2026-10-02: access shared immutable language tables.
 // XKey identifies this logic as ported from the GPL-3.0 OpenKey engine.
 // OpenKey provenance: Copyright © 2019 Tuyen Mai / Mai Vu Tuyen; GPL-3.0.
 //
@@ -112,7 +113,7 @@ extension VNEngine {
             var replacement: (UInt16, UInt16)? = nil
 
             let prevKey = chr(buffer.count - 2)
-            let isVowel = !vietnameseData.isConsonant(prevKey)
+            let isVowel = !VietnameseData.isConsonant(prevKey)
 
             if isVowel {
                 switch lastKey {
@@ -153,7 +154,7 @@ extension VNEngine {
         let firstEntry = buffer[0]
         let keyCode = firstEntry.keyCode
 
-        guard vietnameseData.isLetter(keyCode) else { return }
+        guard VietnameseData.isLetter(keyCode) else { return }
         guard !firstEntry.isCaps else { return }
 
         // Check if the character was going to be passed through (not yet on screen)
@@ -229,7 +230,7 @@ extension VNEngine {
 
         // First char not a letter - likely emoji shortcut
         let firstKeyCode = buffer.keyCode(at: 0)
-        if !vietnameseData.isLetter(firstKeyCode) {
+        if !VietnameseData.isLetter(firstKeyCode) {
             return true
         }
 
